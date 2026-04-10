@@ -116,14 +116,6 @@ include '../includes/navbar.php';
 
                     <button type="submit" class="register-submit">Create Your Account</button>
 
-                    <div class="register-divider">
-                        <span>OR SIGN UP WITH</span>
-                    </div>
-
-                    <div class="register-socials">
-                        <button type="button" class="register-social-btn">Google</button>
-                        <button type="button" class="register-social-btn">GitHub</button>
-                    </div>
 
                     <div class="register-bottom-text">
                         Already have an account? <a href="login.php">Sign In</a>
@@ -185,14 +177,6 @@ include '../includes/navbar.php';
 
                     <button type="submit" class="register-submit">Create Your Account</button>
 
-                    <div class="register-divider">
-                        <span>OR SIGN UP WITH</span>
-                    </div>
-
-                    <div class="register-socials">
-                        <button type="button" class="register-social-btn">Google</button>
-                        <button type="button" class="register-social-btn">GitHub</button>
-                    </div>
 
                     <div class="register-bottom-text">
                         Already have an account? <a href="login.php">Sign In</a>

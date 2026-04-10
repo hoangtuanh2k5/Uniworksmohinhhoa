@@ -2,7 +2,10 @@
 <nav class="topbar">
     <div class="topbar__inner">
         <div class="topbar__brand">
-            <a href="/Uniworksmohinhhoa/public/index.php">UniWorks</a>
+            <a href="/Uniworksmohinhhoa/public/index.php">
+                <span class="topbar__logo-box">✦</span>
+                <span>UniWorks</span>
+            </a>
         </div>
 
         <div class="topbar__menu">
