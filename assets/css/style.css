@@ -1199,6 +1199,20 @@ a {
     background: var(--purple);
     color: #2b2149;
 }
+/* Smooth slide nhẹ */
+.company-nav a:hover {
+    transform: translateX(4px);
+}
+
+/* Hiệu ứng nhấn (click) */
+.company-nav a:active {
+    transform: scale(0.97);
+}
+
+/* Animation mượt hơn */
+.company-nav a {
+    transition: all 0.25s ease;
+}
 
 .company-signout a {
     display: flex;
@@ -1704,3 +1718,4 @@ a {
     height: 260px;
     width: 100%;
 }
+
