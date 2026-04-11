@@ -194,30 +194,37 @@ admin_render_start(
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const labels = <?= json_encode($chartLabels) ?>;
-const dataValues = <?= json_encode($chartValues) ?>;
+const rawData = <?= json_encode($chartValues) ?>;
+const chartData = rawData.map(Number);
 
 const ctx = document.getElementById('chartMain').getContext('2d');
 
 // gradient
 const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-gradient.addColorStop(0, 'rgba(132,204,22,0.4)');
-gradient.addColorStop(1, 'rgba(132,204,22,0)');
+gradient.addColorStop(0, 'rgba(132,204,22,0.38)');
+gradient.addColorStop(1, 'rgba(132,204,22,0.04)');
+
+const maxValue = Math.max(...chartData, 10);
+const suggestedMax = Math.ceil(maxValue * 1.15);
+const stepSize = Math.max(1, Math.round(suggestedMax / 5));
 
 new Chart(ctx, {
     type: 'line',
     data: {
         labels: labels,
         datasets: [{
-            data: dataValues,
+            data: chartData,
             borderColor: '#84cc16',
             backgroundColor: gradient,
             fill: true,
-            tension: 0.45,
-            pointRadius: 0,
+            tension: 0.4,
+            pointRadius: 4,
             pointHoverRadius: 6,
-            pointBackgroundColor: '#fff',
+            pointBackgroundColor: '#ffffff',
             pointBorderColor: '#84cc16',
-            borderWidth: 3
+            borderWidth: 3,
+            pointBorderWidth: 2,
+            borderJoinStyle: 'round'
         }]
     },
     options: {
@@ -248,8 +255,15 @@ new Chart(ctx, {
             },
             y: {
                 beginAtZero: true,
-                grid: { color: '#f1f5f9' },
-                ticks: { color: '#94a3b8' }
+                suggestedMax: suggestedMax,
+                ticks: {
+                    color: '#94a3b8',
+                    stepSize: stepSize,
+                    callback: function(value) {
+                        return Number(value).toLocaleString();
+                    }
+                },
+                grid: { color: '#f1f5f9' }
             }
         },
 
