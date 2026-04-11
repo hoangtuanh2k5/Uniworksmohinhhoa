@@ -1699,3 +1699,8 @@ a {
         grid-template-columns: 1fr;
     }
 }
+.admin-chart {
+    position: relative;
+    height: 260px;
+    width: 100%;
+}
