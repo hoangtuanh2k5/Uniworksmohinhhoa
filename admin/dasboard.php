@@ -41,70 +41,103 @@ if (empty($chartLabels)) {
     $chartValues = [5,10,8,12,6,9];
 }
 
-admin_render_start('Dashboard | Placement Hub', 'dashboard', 'Dashboard', 'Overview of the platform');
+admin_render_start(
+    'Dashboard | Placement Hub',
+    'dashboard',
+    'System Statistics',
+    'Real-time overview of platform activity across all sectors'
+);
 ?>
 
-<style>
-.dashboard-wrapper {
-    font-family: 'Inter', sans-serif;
-    padding: 20px;
-    background: #f8fafc;
-}
-
-.kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4,1fr);
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.kpi-card {
-    padding: 25px;
-    border-radius: 20px;
-    background: #fff;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-.main-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-.card {
-    background: #fff;
-    padding: 25px;
-    border-radius: 20px;
-}
-
-canvas {
-    margin-top: 10px;
-}
-</style>
-
-<div class="dashboard-wrapper">
-
-<h2>Dashboard</h2>
-
-<div class="kpi-grid">
-    <div class="kpi-card">Students: <?= number_format($totalStudents) ?></div>
-    <div class="kpi-card">Companies: <?= number_format($partnerCompanies) ?></div>
-    <div class="kpi-card">Internships: <?= number_format($activeInternships) ?></div>
-    <div class="kpi-card">Applications: <?= number_format($reportsCount) ?></div>
-</div>
-
-<div class="main-grid">
-    <div class="card">
-        <h3>Placement Trends</h3>
-        <canvas id="chartMain" height="120"></canvas>
+<div class="admin-grid admin-grid--stats">
+    <div class="admin-card admin-kpi admin-kpi--yellow">
+        <div class="admin-kpi__top">
+            <span class="admin-kpi__label">Total Students</span>
+            <span class="admin-kpi__trend">+12% <i class="fas fa-arrow-up"></i></span>
+        </div>
+        <div class="admin-kpi__value"><?= number_format($totalStudents) ?></div>
     </div>
-
-    <div class="card">
-        <h3>Info</h3>
-        <p>Dashboard overview</p>
+    <div class="admin-card admin-kpi admin-kpi--purple">
+        <div class="admin-kpi__top">
+            <span class="admin-kpi__label">Partner Companies</span>
+            <span class="admin-kpi__trend">+5% <i class="fas fa-arrow-up"></i></span>
+        </div>
+        <div class="admin-kpi__value"><?= number_format($partnerCompanies) ?></div>
+    </div>
+    <div class="admin-card admin-kpi admin-kpi--yellow">
+        <div class="admin-kpi__top">
+            <span class="admin-kpi__label">Active Internships</span>
+            <span class="admin-kpi__trend">+8% <i class="fas fa-arrow-up"></i></span>
+        </div>
+        <div class="admin-kpi__value"><?= number_format($activeInternships) ?></div>
+    </div>
+    <div class="admin-card admin-kpi admin-kpi--purple">
+        <div class="admin-kpi__top">
+            <span class="admin-kpi__label">Reports Generated</span>
+            <span class="admin-kpi__trend">+15% <i class="fas fa-arrow-up"></i></span>
+        </div>
+        <div class="admin-kpi__value"><?= number_format($reportsCount) ?></div>
     </div>
 </div>
 
+<div class="admin-grid admin-grid--dashboard">
+    <div class="admin-card">
+        <div class="admin-card__head">
+            <div>
+                <h3>Placement Trends</h3>
+                <span class="admin-card__eyebrow">Monthly application and hiring growth</span>
+            </div>
+            <select class="admin-select">
+                <option>Last 6 Months</option>
+            </select>
+        </div>
+
+        <div class="admin-chart">
+            <canvas id="chartMain"></canvas>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <div class="admin-card__head">
+            <div>
+                <h3>Recent Applications</h3>
+                <span class="admin-card__eyebrow">Latest student placements</span>
+            </div>
+        </div>
+
+        <div class="admin-list">
+            <div class="admin-list-item">
+                <div class="admin-person">
+                    <div class="admin-avatar">JW</div>
+                    <div class="admin-person__meta">
+                        <strong>James Wilson</strong>
+                        <span>UI/UX at Google</span>
+                    </div>
+                </div>
+                <span class="admin-pill admin-pill--pending">Pending</span>
+            </div>
+            <div class="admin-list-item">
+                <div class="admin-person">
+                    <div class="admin-avatar">SC</div>
+                    <div class="admin-person__meta">
+                        <strong>Sarah Connor</strong>
+                        <span>DevOps at Amazon</span>
+                    </div>
+                </div>
+                <span class="admin-pill admin-pill--approved">Accepted</span>
+            </div>
+            <div class="admin-list-item">
+                <div class="admin-person">
+                    <div class="admin-avatar">MC</div>
+                    <div class="admin-person__meta">
+                        <strong>Michael Chen</strong>
+                        <span>Fullstack at Stripe</span>
+                    </div>
+                </div>
+                <span class="admin-pill admin-pill--reviewed">Reviewing</span>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
