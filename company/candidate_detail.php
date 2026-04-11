@@ -1,38 +1,16 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require_once '../config/db.php';
 require_once '../includes/functions.php';
 
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'company') {
-    redirect('/Uniworksmohinhhoa/public/login.php');
-}
+$previewMode = true;
 
-$user = $_SESSION['user'];
-$appId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-$stmt = $pdo->prepare("SELECT * FROM companies WHERE user_id = ?");
-$stmt->execute([$user['id']]);
-$company = $stmt->fetch(PDO::FETCH_ASSOC);
-
-$stmt = $pdo->prepare("
-    SELECT a.*, 
-           s.id AS student_id, s.student_code, s.class_name, s.gpa, s.user_id AS student_user_id,
-           u.full_name AS student_name, u.email, u.phone,
-           m.name AS major_name,
-           j.title AS job_title
-    FROM applications a
-    JOIN students s ON a.student_id = s.id
-    JOIN users u ON s.user_id = u.id
-    LEFT JOIN majors m ON s.major_id = m.id
-    JOIN jobs j ON a.job_id = j.id
-    WHERE a.id = ? AND j.company_id = ?
-");
-$stmt->execute([$appId, $company['id']]);
-$candidate = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$candidate) {
-    setFlash('error', 'Candidate not found.');
-    redirect('/Uniworksmohinhhoa/company/applications.php');
+function safeRedirect($path) {
+    header("Location: " . $path);
+    exit;
 }
 
 function formatAppStatus($status) {
@@ -52,8 +30,61 @@ function badgeClass($status) {
     return 'pending';
 }
 
-$success = getFlash('success');
-$error = getFlash('error');
+if ($previewMode) {
+    $candidate = [
+        'id' => 1,
+        'student_name' => 'Kieu Tram Nguyen',
+        'email' => 'kieu.tram@example.com',
+        'phone' => '0901234567',
+        'student_code' => 'SE001',
+        'major_name' => 'Information Systems',
+        'class_name' => 'IS01',
+        'gpa' => '3.92',
+        'job_title' => 'Software Engineer Intern',
+        'status' => 'reviewed',
+        'applied_at' => '2026-04-11',
+        'cv_url' => '#',
+        'student_user_id' => 101
+    ];
+
+    $success = null;
+    $error = null;
+} else {
+    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'company') {
+        safeRedirect('../public/login.php');
+    }
+
+    $user = $_SESSION['user'];
+    $appId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+    $stmt = $pdo->prepare("SELECT * FROM companies WHERE user_id = ?");
+    $stmt->execute([$user['id']]);
+    $company = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $stmt = $pdo->prepare("
+        SELECT a.*, 
+               s.id AS student_id, s.student_code, s.class_name, s.gpa, s.user_id AS student_user_id,
+               u.full_name AS student_name, u.email, u.phone,
+               m.name AS major_name,
+               j.title AS job_title
+        FROM applications a
+        JOIN students s ON a.student_id = s.id
+        JOIN users u ON s.user_id = u.id
+        LEFT JOIN majors m ON s.major_id = m.id
+        JOIN jobs j ON a.job_id = j.id
+        WHERE a.id = ? AND j.company_id = ?
+    ");
+    $stmt->execute([$appId, $company['id']]);
+    $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$candidate) {
+        setFlash('error', 'Candidate not found.');
+        safeRedirect('applications.php');
+    }
+
+    $success = getFlash('success');
+    $error = getFlash('error');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,12 +120,17 @@ $error = getFlash('error');
         <div class="topbar">
             <div></div>
             <div class="topbar-actions">
-                <a class="btn btn-primary" href="applications.php">Back to Applicants</a>
+                <a class="btn btn-primary" href="applications.php">Back</a>
             </div>
         </div>
 
-        <?php if ($success): ?><div class="flash success"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
-        <?php if ($error): ?><div class="flash error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+        <?php if (!empty($success)): ?>
+            <div class="flash success"><?php echo htmlspecialchars($success); ?></div>
+        <?php endif; ?>
+
+        <?php if (!empty($error)): ?>
+            <div class="flash error"><?php echo htmlspecialchars($error); ?></div>
+        <?php endif; ?>
 
         <h1 class="page-title">Candidate Detail</h1>
         <p class="page-subtitle">Review candidate profile and application information.</p>
@@ -160,8 +196,12 @@ $error = getFlash('error');
             </div>
 
             <div class="actions" style="margin-top:18px;">
-                <a class="btn btn-primary" href="evaluate.php?id=<?php echo $candidate['id']; ?>">Evaluate Candidate</a>
-                <a class="btn btn-outline" href="messages.php?student_user_id=<?php echo $candidate['student_user_id']; ?>">Send Message</a>
+                <a class="btn btn-primary" href="evaluate.php<?php echo $previewMode ? '' : '?id=' . $candidate['id']; ?>">
+                    Evaluate
+                </a>
+                <a class="btn btn-outline" href="messages.php<?php echo $previewMode ? '?student_user_id=' . $candidate['student_user_id'] : '?student_user_id=' . $candidate['student_user_id']; ?>">
+                    Message
+                </a>
             </div>
         </div>
     </main>
