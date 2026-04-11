@@ -52,30 +52,34 @@ admin_render_start(
 <div class="admin-grid admin-grid--stats">
     <div class="admin-card admin-kpi admin-kpi--yellow">
         <div class="admin-kpi__top">
-            <span class="admin-kpi__label">Total Students</span>
+            <div class="admin-kpi__icon"><i class="fas fa-graduation-cap"></i></div>
             <span class="admin-kpi__trend">+12% <i class="fas fa-arrow-up"></i></span>
         </div>
+        <span class="admin-kpi__label">Total Students</span>
         <div class="admin-kpi__value"><?= number_format($totalStudents) ?></div>
     </div>
     <div class="admin-card admin-kpi admin-kpi--purple">
         <div class="admin-kpi__top">
-            <span class="admin-kpi__label">Partner Companies</span>
+            <div class="admin-kpi__icon"><i class="fas fa-building"></i></div>
             <span class="admin-kpi__trend">+5% <i class="fas fa-arrow-up"></i></span>
         </div>
+        <span class="admin-kpi__label">Partner Companies</span>
         <div class="admin-kpi__value"><?= number_format($partnerCompanies) ?></div>
     </div>
     <div class="admin-card admin-kpi admin-kpi--yellow">
         <div class="admin-kpi__top">
-            <span class="admin-kpi__label">Active Internships</span>
+            <div class="admin-kpi__icon"><i class="fas fa-briefcase"></i></div>
             <span class="admin-kpi__trend">+8% <i class="fas fa-arrow-up"></i></span>
         </div>
+        <span class="admin-kpi__label">Active Internships</span>
         <div class="admin-kpi__value"><?= number_format($activeInternships) ?></div>
     </div>
     <div class="admin-card admin-kpi admin-kpi--purple">
         <div class="admin-kpi__top">
-            <span class="admin-kpi__label">Reports Generated</span>
+            <div class="admin-kpi__icon"><i class="fas fa-chart-line"></i></div>
             <span class="admin-kpi__trend">+15% <i class="fas fa-arrow-up"></i></span>
         </div>
+        <span class="admin-kpi__label">Reports Generated</span>
         <div class="admin-kpi__value"><?= number_format($reportsCount) ?></div>
     </div>
 </div>
@@ -137,6 +141,53 @@ admin_render_start(
                 <span class="admin-pill admin-pill--reviewed">Reviewing</span>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="admin-grid">
+    <div class="admin-card">
+        <div class="admin-card__head">
+            <div>
+                <h3>Top Partner Companies</h3>
+                <span class="admin-card__eyebrow">Trusted employers working with students</span>
+            </div>
+            <a href="#" class="admin-button--soft">Manage Partners</a>
+        </div>
+
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Open Roles</th>
+                    <th>Success Rate</th>
+                    <th>Active Since</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="admin-table__company"><span class="admin-avatar">M</span><strong>Meta Platforms</strong></td>
+                    <td>45</td>
+                    <td>88%</td>
+                    <td>Jan 2022</td>
+                    <td><span class="admin-pill admin-pill--active">Active</span></td>
+                </tr>
+                <tr>
+                    <td class="admin-table__company"><span class="admin-avatar">A</span><strong>Apple Inc.</strong></td>
+                    <td>32</td>
+                    <td>92%</td>
+                    <td>Mar 2021</td>
+                    <td><span class="admin-pill admin-pill--active">Active</span></td>
+                </tr>
+                <tr>
+                    <td class="admin-table__company"><span class="admin-avatar">S</span><strong>Stripe</strong></td>
+                    <td>18</td>
+                    <td>83%</td>
+                    <td>Sep 2021</td>
+                    <td><span class="admin-pill admin-pill--active">Active</span></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
