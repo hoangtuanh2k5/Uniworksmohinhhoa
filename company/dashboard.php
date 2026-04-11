@@ -1,18 +1,4 @@
 <?php
-require_once '../includes/auth.php';
-requireRole('company');
-include '../includes/header.php';
-include '../includes/navbar.php';
-?>
-<main class="container center-box">
-    <div class="simple-card">
-        <h2>Company Dashboard</h2>
-    </div>
-</main>
-<?php include '../includes/footer.php'; ?>
-
-
-<?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -20,20 +6,8 @@ session_start();
 require_once '../config/db.php';
 require_once '../includes/functions.php';
 
-/*
-|--------------------------------------------------------------------------
-| TẠM THỜI CHO XEM GIAO DIỆN NẾU CHƯA LOGIN
-|--------------------------------------------------------------------------
-| Nếu đã login company thì để false
-| Nếu chỉ muốn xem giao diện trước thì đổi thành true
-*/
 $previewMode = true;
 
-/*
-|--------------------------------------------------------------------------
-| HELPER
-|--------------------------------------------------------------------------
-*/
 function safeRedirect($path) {
     header("Location: " . $path);
     exit;
@@ -70,11 +44,6 @@ function makeInitials($name) {
     return $initials ?: 'NA';
 }
 
-/*
-|--------------------------------------------------------------------------
-| PREVIEW MODE: KHÔNG CẦN LOGIN / KHÔNG CẦN DB ĐỦ DATA
-|--------------------------------------------------------------------------
-*/
 if ($previewMode) {
     $company = [
         'id' => 1,
@@ -112,11 +81,6 @@ if ($previewMode) {
     $success = null;
     $error = null;
 } else {
-    /*
-    |--------------------------------------------------------------------------
-    | CHẠY THẬT
-    |--------------------------------------------------------------------------
-    */
     if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] ?? '') !== 'company') {
         safeRedirect('../public/login.php');
     }
@@ -228,7 +192,7 @@ if ($previewMode) {
             <nav class="company-nav">
                 <a class="active" href="dashboard.php">Dashboard</a>
                 <a href="applications.php">Applicants</a>
-                <a href="manage_job.php">Jobs</a>
+                <a href="manage_jobs.php">Jobs</a>
                 <a href="messages.php">Messages</a>
                 <a href="profile.php">Profile</a>
             </nav>
