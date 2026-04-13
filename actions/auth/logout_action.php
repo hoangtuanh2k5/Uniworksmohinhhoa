@@ -1,10 +1,8 @@
 <?php
-require_once '../../includes/functions.php';
+session_start();
 
-session_unset();
+$_SESSION = [];
 session_destroy();
 
-session_start();
-setFlash('success', 'Logged out successfully.');
-
-redirect('/Uniworksmohinhhoa/public/login.php');
+header("Location: /Uniworksmohinhhoa/public/index.php");
+exit;

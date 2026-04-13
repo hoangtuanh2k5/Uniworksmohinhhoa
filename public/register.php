@@ -70,33 +70,6 @@ include '../includes/navbar.php';
                         <input type="email" name="email" class="register-input" placeholder="name@university.edu" required>
                     </div>
 
-                    <div class="register-field">
-                        <label>Phone</label>
-                        <input type="text" name="phone" class="register-input" placeholder="0123456789">
-                    </div>
-
-                    <div class="register-field">
-                        <label>Student Code</label>
-                        <input type="text" name="student_code" class="register-input" placeholder="SV001" required>
-                    </div>
-
-                    <div class="register-grid-2">
-                        <div class="register-field">
-                            <label>Major</label>
-                            <select name="major_id" class="register-input" required>
-                                <option value="">Select major</option>
-                                <option value="1">Information Systems</option>
-                                <option value="2">Computer Science</option>
-                                <option value="3">Business Administration</option>
-                            </select>
-                        </div>
-
-                        <div class="register-field">
-                            <label>Class Name</label>
-                            <input type="text" name="class_name" class="register-input" placeholder="IS01">
-                        </div>
-                    </div>
-
                     <div class="register-grid-2">
                         <div class="register-field">
                             <label>Password</label>
@@ -109,13 +82,7 @@ include '../includes/navbar.php';
                         </div>
                     </div>
 
-                    <div class="register-field">
-                        <label>GPA</label>
-                        <input type="number" step="0.01" name="gpa" class="register-input" placeholder="3.50">
-                    </div>
-
                     <button type="submit" class="register-submit">Create Your Account</button>
-
 
                     <div class="register-bottom-text">
                         Already have an account? <a href="login.php">Sign In</a>
@@ -124,43 +91,13 @@ include '../includes/navbar.php';
             <?php else: ?>
                 <form action="../actions/auth/register_company_action.php" method="POST" class="register-form">
                     <div class="register-field">
-                        <label>Representative Name</label>
+                        <label>Full Name</label>
                         <input type="text" name="full_name" class="register-input" placeholder="John Doe" required>
                     </div>
 
                     <div class="register-field">
                         <label>Email Address</label>
                         <input type="email" name="email" class="register-input" placeholder="name@company.com" required>
-                    </div>
-
-                    <div class="register-field">
-                        <label>Phone</label>
-                        <input type="text" name="phone" class="register-input" placeholder="0123456789">
-                    </div>
-
-                    <div class="register-field">
-                        <label>Company Name</label>
-                        <input type="text" name="company_name" class="register-input" placeholder="ABC Company" required>
-                    </div>
-
-                    <div class="register-field">
-                        <label>Tax Code</label>
-                        <input type="text" name="tax_code" class="register-input" placeholder="TAX001" required>
-                    </div>
-
-                    <div class="register-field">
-                        <label>Address</label>
-                        <input type="text" name="address" class="register-input" placeholder="Company address">
-                    </div>
-
-                    <div class="register-field">
-                        <label>Website</label>
-                        <input type="text" name="website" class="register-input" placeholder="https://company.com">
-                    </div>
-
-                    <div class="register-field">
-                        <label>Industry Type</label>
-                        <input type="text" name="industry_type" class="register-input" placeholder="Technology">
                     </div>
 
                     <div class="register-grid-2">
@@ -176,7 +113,6 @@ include '../includes/navbar.php';
                     </div>
 
                     <button type="submit" class="register-submit">Create Your Account</button>
-
 
                     <div class="register-bottom-text">
                         Already have an account? <a href="login.php">Sign In</a>
