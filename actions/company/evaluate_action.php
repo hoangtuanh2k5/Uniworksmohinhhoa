@@ -4,11 +4,11 @@ require_once '../../config/db.php';
 require_once '../../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    redirect('/Uniworksmohinhhoa/company/applications.php');
+    redirect('../../company/applications.php');
 }
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'company') {
-    redirect('/Uniworksmohinhhoa/public/login.php');
+    redirect('../../public/login.php');
 }
 
 $registrationId = (int)($_POST['registration_id'] ?? 0);
@@ -18,7 +18,7 @@ $feedback = trim($_POST['feedback'] ?? '');
 
 if (!$registrationId || !$applicationId || $feedback === '' || $score < 0 || $score > 100) {
     setFlash('error', 'Please enter valid evaluation information.');
-    redirect('/Uniworksmohinhhoa/company/evaluate.php?id=' . $applicationId);
+    redirect('../../company/evaluate.php?id=' . $applicationId);
 }
 
 try {
@@ -47,8 +47,8 @@ try {
     }
 
     setFlash('success', 'Evaluation saved successfully.');
-    redirect('/Uniworksmohinhhoa/company/evaluate.php?id=' . $applicationId);
+    redirect('../../company/evaluate.php?id=' . $applicationId);
 } catch (Exception $e) {
     setFlash('error', 'Failed to save evaluation.');
-    redirect('/Uniworksmohinhhoa/company/evaluate.php?id=' . $applicationId);
+    redirect('../../company/evaluate.php?id=' . $applicationId);
 }
