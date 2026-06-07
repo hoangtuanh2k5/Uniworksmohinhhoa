@@ -9,80 +9,91 @@ if (!isLoggedIn() || $_SESSION['user']['role'] !== 'student') {
 $user_id = $_SESSION['user']['id'];
 $job_id = (int)($_POST['job_id'] ?? 0);
 
-if ($job_id <= 0) {
-    setFlash('error', 'Invalid job.');
-    redirect('/Uniworksmohinhhoa/student/jobs.php');
-}
-
 $stmt = $pdo->prepare("SELECT id FROM students WHERE user_id = ?");
 $stmt->execute([$user_id]);
 $student = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$student) {
-    setFlash('error', 'Please complete your student profile first.');
+    setFlash('error', 'Please complete your profile first.');
     redirect('/Uniworksmohinhhoa/student/profile.php?setup=1');
 }
 
-$stmt = $pdo->prepare("SELECT id FROM jobs WHERE id = ? AND status = 'open'");
-$stmt->execute([$job_id]);
-$job = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$job) {
-    setFlash('error', 'Job not found or closed.');
+if ($job_id <= 0) {
+    setFlash('error', 'Invalid job.');
     redirect('/Uniworksmohinhhoa/student/jobs.php');
 }
 
-$stmt = $pdo->prepare("SELECT id FROM applications WHERE student_id = ? AND job_id = ?");
-$stmt->execute([$student['id'], $job_id]);
-$existing = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if ($existing) {
-    setFlash('error', 'You have already applied for this job.');
-    redirect('/Uniworksmohinhhoa/student/job_detail.php?id=' . $job_id);
+if (!isset($_FILES['cv_file'])) {
+    die('cv_file not found in $_FILES');
 }
 
-if (!isset($_FILES['cv_file']) || $_FILES['cv_file']['error'] !== UPLOAD_ERR_OK) {
-    setFlash('error', 'Please upload your CV.');
-    redirect('/Uniworksmohinhhoa/student/apply.php?job_id=' . $job_id);
+if ($_FILES['cv_file']['error'] !== UPLOAD_ERR_OK) {
+    die('Upload error code: ' . $_FILES['cv_file']['error']);
 }
 
 $file = $_FILES['cv_file'];
-$allowed_extensions = ['pdf', 'doc', 'docx'];
-$extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+$originalName = $file['name'];
+$tmpName = $file['tmp_name'];
+$fileSize = $file['size'];
 
-if (!in_array($extension, $allowed_extensions)) {
-    setFlash('error', 'Invalid file type. Only PDF, DOC, DOCX allowed.');
+$ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+$allowed = ['pdf', 'doc', 'docx'];
+
+if (!in_array($ext, $allowed)) {
+    setFlash('error', 'Only PDF, DOC, and DOCX files are allowed.');
     redirect('/Uniworksmohinhhoa/student/apply.php?job_id=' . $job_id);
 }
 
-if ($file['size'] > 5 * 1024 * 1024) {
-    setFlash('error', 'File is too large. Maximum 5MB.');
+if ($fileSize > 5 * 1024 * 1024) {
+    setFlash('error', 'File size must be less than 5MB.');
     redirect('/Uniworksmohinhhoa/student/apply.php?job_id=' . $job_id);
 }
 
-$upload_dir = '../../uploads/cvs/';
-if (!is_dir($upload_dir)) {
-    mkdir($upload_dir, 0777, true);
+/*
+|-------------------------------------------------------
+| Dùng đường dẫn tuyệt đối để upload
+| __DIR__ = /Uniworksmohinhhoa/actions/student
+| ../../uploads/cvs = /Uniworksmohinhhoa/uploads/cvs
+|-------------------------------------------------------
+*/
+$uploadDir = __DIR__ . '/../../uploads/cvs/';
+
+if (!is_dir($uploadDir)) {
+    if (!mkdir($uploadDir, 0777, true)) {
+        die('Cannot create upload directory: ' . $uploadDir);
+    }
 }
 
-$new_filename = 'cv_' . $student['id'] . '_' . time() . '.' . $extension;
-$target_path = $upload_dir . $new_filename;
-$db_path = 'uploads/cvs/' . $new_filename;
-
-if (!move_uploaded_file($file['tmp_name'], $target_path)) {
-    setFlash('error', 'Failed to upload CV.');
-    redirect('/Uniworksmohinhhoa/student/apply.php?job_id=' . $job_id);
+if (!is_writable($uploadDir)) {
+    die('Upload directory is not writable: ' . $uploadDir);
 }
+
+$newFileName = 'cv_' . $student['id'] . '_' . time() . '.' . $ext;
+$targetPath = $uploadDir . $newFileName;
+
+if (!move_uploaded_file($tmpName, $targetPath)) {
+    die('move_uploaded_file failed. Target path: ' . $targetPath);
+}
+
+$cvUrl = 'uploads/cvs/' . $newFileName;
 
 try {
     $stmt = $pdo->prepare("
-        INSERT INTO applications (student_id, job_id, cv_url, status, admin_approved)
-        VALUES (?, ?, ?, 'pending', 0)
+        INSERT INTO applications (student_id, job_id, cv_url, status, admin_approved, company_approved)
+        VALUES (?, ?, ?, 'pending', 0, 0)
     ");
-    $stmt->execute([$student['id'], $job_id, $db_path]);
+    $stmt->execute([$student['id'], $job_id, $cvUrl]);
 
     setFlash('success', 'Application submitted successfully.');
     redirect('/Uniworksmohinhhoa/student/applications.php');
+
+} catch (PDOException $e) {
+    if ($e->getCode() == 23000) {
+        setFlash('error', 'You have already applied for this job.');
+    } else {
+        setFlash('error', 'Database error: ' . $e->getMessage());
+    }
+    redirect('/Uniworksmohinhhoa/student/apply.php?job_id=' . $job_id);
 
 } catch (Exception $e) {
     setFlash('error', 'Failed to submit application.');

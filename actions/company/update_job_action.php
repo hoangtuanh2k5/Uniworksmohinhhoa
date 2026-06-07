@@ -23,9 +23,9 @@ $description = trim($_POST['description'] ?? '');
 $requirements = trim($_POST['requirements'] ?? '');
 $slots = (int)($_POST['slots'] ?? 0);
 $deadline = $_POST['deadline'] ?? '';
-$status = sanitize($_POST['status'] ?? 'open');
+$status = $_POST['status'] ?? 'open';
 
-if (!$title || $period_id <= 0 || !$description || !$requirements || $slots <= 0 || !$deadline) {
+if ($job_id <= 0 || $title === '' || $period_id <= 0 || $description === '' || $requirements === '' || $slots <= 0 || $deadline === '') {
     setFlash('error', 'Please fill in all required fields.');
     redirect('/Uniworksmohinhhoa/company/edit_job.php?id=' . $job_id);
 }

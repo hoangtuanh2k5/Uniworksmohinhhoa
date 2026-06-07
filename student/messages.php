@@ -50,11 +50,13 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/jobs.php">Internships</a>
                 <a href="/Uniworksmohinhhoa/student/messages.php" class="active">Messages</a>
                 <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
+                <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
             </nav>
         </div>
 
         <div class="student-sidebar__footer">
-            <a href="/Uniworksmohinhhoa/public/logout.php">↩ Sign Out</a>
+            <a href="/Uniworksmohinhhoa/public/logout.php">↩ Logout</a>
         </div>
     </aside>
 

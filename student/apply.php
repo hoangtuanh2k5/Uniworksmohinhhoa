@@ -21,15 +21,19 @@ if (!$student) {
 }
 
 $stmt = $pdo->prepare("
-    SELECT j.id, j.title, c.company_name
+    SELECT 
+        j.id,
+        j.title,
+        c.company_name
     FROM jobs j
     INNER JOIN companies c ON j.company_id = c.id
-    WHERE j.id = ? AND j.status = 'open'
+    WHERE j.id = ?
 ");
 $stmt->execute([$job_id]);
 $job = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$job) {
+    setFlash('error', 'Job not found.');
     redirect('/Uniworksmohinhhoa/student/jobs.php');
 }
 
@@ -53,11 +57,13 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/jobs.php" class="active">Internships</a>
                 <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
                 <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
+                <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
             </nav>
         </div>
 
         <div class="student-sidebar__footer">
-            <a href="/Uniworksmohinhhoa/public/logout.php">↩ Log Out</a>
+            <a href="/Uniworksmohinhhoa/public/logout.php">↩ Logout</a>
         </div>
     </aside>
 
@@ -71,17 +77,28 @@ include '../includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <p style="margin-bottom:8px;"><strong>Job Title:</strong> <?= htmlspecialchars($job['title']) ?></p>
-            <p style="margin-bottom:20px;"><strong>Company:</strong> <?= htmlspecialchars($job['company_name']) ?></p>
+            <p style="margin-bottom:8px;">
+                <strong>Job Title:</strong> <?= htmlspecialchars($job['title']) ?>
+            </p>
 
-            <form action="../actions/student/apply_job_action.php" method="POST" enctype="multipart/form-data">
+            <p style="margin-bottom:20px;">
+                <strong>Company:</strong> <?= htmlspecialchars($job['company_name']) ?>
+            </p>
+
+            <form action="/Uniworksmohinhhoa/actions/student/apply_job_action.php" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
 
                 <div class="student-form-group">
-                    <label>Upload CV (PDF, DOC, DOCX)</label>
-                    <input type="file" name="cv_file" class="student-form-control" required>
-                </div>
-
+    <label for="cv_file">Upload CV (PDF, DOC, DOCX)</label>
+    <input
+        id="cv_file"
+        type="file"
+        name="cv_file"
+        accept=".pdf,.doc,.docx"
+        required
+        style="display:block; width:100%; padding:12px; background:#f8f9fc; border:1px solid #d9ddea; border-radius:16px;"
+    >
+</div>
                 <button type="submit" class="student-btn">Submit Application</button>
             </form>
         </div>

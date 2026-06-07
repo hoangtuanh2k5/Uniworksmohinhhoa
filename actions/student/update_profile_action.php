@@ -8,13 +8,24 @@ if (!isLoggedIn() || $_SESSION['user']['role'] !== 'student') {
 
 $user_id = $_SESSION['user']['id'];
 $student_code = sanitize($_POST['student_code'] ?? '');
-$major_id = $_POST['major_id'] ?? null;
+$major_id = (int)($_POST['major_id'] ?? 0);
 $class_name = sanitize($_POST['class_name'] ?? '');
 $gpa = $_POST['gpa'] ?? null;
 
-if (!$student_code || !$major_id) {
-    setFlash('error', 'Please fill in all required fields.');
+if ($student_code === '' || $major_id <= 0) {
+    setFlash('error', 'Student Code and Major are required.');
     redirect('/Uniworksmohinhhoa/student/profile.php?setup=1');
+}
+
+if ($gpa !== '' && $gpa !== null) {
+    $gpa = (float)$gpa;
+
+    if ($gpa < 0 || $gpa > 10) {
+        setFlash('error', 'GPA must be between 0 and 10.');
+        redirect('/Uniworksmohinhhoa/student/profile.php?setup=1');
+    }
+} else {
+    $gpa = null;
 }
 
 try {
@@ -32,7 +43,7 @@ try {
             $student_code,
             $major_id,
             $class_name !== '' ? $class_name : null,
-            $gpa !== '' ? $gpa : null,
+            $gpa,
             $user_id
         ]);
     } else {
@@ -45,12 +56,21 @@ try {
             $student_code,
             $major_id,
             $class_name !== '' ? $class_name : null,
-            $gpa !== '' ? $gpa : null
+            $gpa
         ]);
     }
 
     setFlash('success', 'Profile saved successfully.');
-    redirect('/Uniworksmohinhhoa/student/dashboard.php');
+    redirect('/Uniworksmohinhhoa/student/profile.php?success=1');
+
+} catch (PDOException $e) {
+    if ($e->getCode() == 23000) {
+        setFlash('error', 'Student Code already exists or Major is invalid.');
+    } else {
+        setFlash('error', 'Database error: ' . $e->getMessage());
+    }
+
+    redirect('/Uniworksmohinhhoa/student/profile.php?setup=1');
 
 } catch (Exception $e) {
     setFlash('error', 'Failed to save profile.');

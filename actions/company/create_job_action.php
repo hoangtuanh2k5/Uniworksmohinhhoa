@@ -23,7 +23,7 @@ $requirements = trim($_POST['requirements'] ?? '');
 $slots = (int)($_POST['slots'] ?? 0);
 $deadline = $_POST['deadline'] ?? '';
 
-if (!$title || $period_id <= 0 || !$description || !$requirements || $slots <= 0 || !$deadline) {
+if ($title === '' || $period_id <= 0 || $description === '' || $requirements === '' || $slots <= 0 || $deadline === '') {
     setFlash('error', 'Please fill in all required fields.');
     redirect('/Uniworksmohinhhoa/company/create_job.php');
 }

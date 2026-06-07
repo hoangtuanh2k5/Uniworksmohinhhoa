@@ -5,7 +5,7 @@ requireRole('company');
 
 $user = currentUser();
 
-$stmt = $pdo->prepare("SELECT * FROM companies WHERE user_id = ?");
+$stmt = $pdo->prepare("SELECT id, company_name FROM companies WHERE user_id = ?");
 $stmt->execute([$user['id']]);
 $company = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -41,6 +41,7 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/company/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/company/applications.php">Applicants</a>
                 <a href="/Uniworksmohinhhoa/company/manage_job.php" class="active">Jobs</a>
+                <a href="/Uniworksmohinhhoa/company/messages.php">Messages</a>
                 <a href="/Uniworksmohinhhoa/company/profile.php">Profile</a>
             </nav>
         </div>
@@ -53,47 +54,44 @@ include '../includes/header.php';
     <main class="company-main">
         <div class="company-topbar">
             <div>
-                <h1>Manage Jobs</h1>
-                <p>Review and update your internship postings.</p>
+                <h1>Manage Job Posts</h1>
+                <p>Create, edit, and manage your internship posts.</p>
             </div>
-            <a href="/Uniworksmohinhhoa/company/create_job.php" class="company-btn">+ New Job</a>
+            <a href="/Uniworksmohinhhoa/company/create_job.php" class="company-btn">+ Post New Job</a>
         </div>
 
         <div class="company-card">
-            <table class="company-table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Period</th>
-                        <th>Slots</th>
-                        <th>Deadline</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($jobs)): ?>
-                        <tr><td colspan="6">No jobs posted yet.</td></tr>
-                    <?php else: ?>
+            <?php if (empty($jobs)): ?>
+                <p class="company-muted">No jobs posted yet.</p>
+            <?php else: ?>
+                <table class="company-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Period</th>
+                            <th>Deadline</th>
+                            <th>Slots</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         <?php foreach ($jobs as $job): ?>
                             <tr>
                                 <td><?= htmlspecialchars($job['title']) ?></td>
                                 <td><?= htmlspecialchars($job['period_name']) ?></td>
-                                <td><?= htmlspecialchars($job['slots']) ?></td>
                                 <td><?= htmlspecialchars($job['deadline']) ?></td>
+                                <td><?= htmlspecialchars($job['slots']) ?></td>
                                 <td><?= htmlspecialchars($job['status']) ?></td>
-                                <td class="company-actions">
-                                    <a class="company-btn-outline" href="/Uniworksmohinhhoa/company/edit_job.php?id=<?= $job['id'] ?>">Edit</a>
-                                    <form action="/Uniworksmohinhhoa/actions/company/delete_job_action.php" method="POST" onsubmit="return confirm('Delete this job?');">
-                                        <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
-                                        <button type="submit" class="company-btn-outline">Delete</button>
-                                    </form>
+                                <td>
+                                    <a href="/Uniworksmohinhhoa/company/edit_job.php?id=<?= $job['id'] ?>">Edit</a> |
+                                    <a href="/Uniworksmohinhhoa/actions/company/delete_job_action.php?id=<?= $job['id'] ?>" onclick="return confirm('Delete this job?')">Delete</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
     </main>
 </div>

@@ -8,7 +8,7 @@ $user = currentUser();
 $job_id = (int)($_GET['id'] ?? 0);
 $flash = getFlash();
 
-$stmt = $pdo->prepare("SELECT * FROM companies WHERE user_id = ?");
+$stmt = $pdo->prepare("SELECT id, company_name FROM companies WHERE user_id = ?");
 $stmt->execute([$user['id']]);
 $company = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -16,11 +16,7 @@ if (!$company) {
     redirect('/Uniworksmohinhhoa/company/profile.php?setup=1');
 }
 
-$stmt = $pdo->prepare("
-    SELECT *
-    FROM jobs
-    WHERE id = ? AND company_id = ?
-");
+$stmt = $pdo->prepare("SELECT * FROM jobs WHERE id = ? AND company_id = ?");
 $stmt->execute([$job_id, $company['id']]);
 $job = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -48,6 +44,7 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/company/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/company/applications.php">Applicants</a>
                 <a href="/Uniworksmohinhhoa/company/manage_job.php" class="active">Jobs</a>
+                <a href="/Uniworksmohinhhoa/company/messages.php">Messages</a>
                 <a href="/Uniworksmohinhhoa/company/profile.php">Profile</a>
             </nav>
         </div>
@@ -58,14 +55,9 @@ include '../includes/header.php';
     </aside>
 
     <main class="company-main">
-        <div class="company-topbar">
-            <div>
-                <h1>Edit Job</h1>
-                <p>Update this internship posting.</p>
-            </div>
-        </div>
-
         <div class="company-form-card">
+            <h2>Edit Internship Job</h2>
+
             <?php if ($flash): ?>
                 <div class="flash <?= htmlspecialchars($flash['type']) ?>" style="margin-bottom:18px;">
                     <?= htmlspecialchars($flash['message']) ?>
@@ -103,7 +95,7 @@ include '../includes/header.php';
 
                 <div class="company-form-group">
                     <label>Slots</label>
-                    <input type="number" name="slots" class="company-form-control" value="<?= htmlspecialchars($job['slots']) ?>" min="1" required>
+                    <input type="number" name="slots" class="company-form-control" min="1" value="<?= htmlspecialchars($job['slots']) ?>" required>
                 </div>
 
                 <div class="company-form-group">
@@ -114,8 +106,8 @@ include '../includes/header.php';
                 <div class="company-form-group">
                     <label>Status</label>
                     <select name="status" class="company-form-control" required>
-                        <option value="open" <?= $job['status'] === 'open' ? 'selected' : '' ?>>open</option>
-                        <option value="closed" <?= $job['status'] === 'closed' ? 'selected' : '' ?>>closed</option>
+                        <option value="open" <?= $job['status'] === 'open' ? 'selected' : '' ?>>Open</option>
+                        <option value="closed" <?= $job['status'] === 'closed' ? 'selected' : '' ?>>Closed</option>
                     </select>
                 </div>
 
