@@ -1,275 +1,436 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-session_start();
+require_once '../includes/auth.php';
 require_once '../config/db.php';
 require_once '../includes/functions.php';
+requireCompanyComplete($pdo);
+
+$user = currentUser();
+$keyword = trim($_GET['keyword'] ?? '');
 
 /*
-|--------------------------------------------------------------------------
-| PREVIEW MODE
-|--------------------------------------------------------------------------
-| true  = xem giao diện ngay, không cần login/db đủ dữ liệu
-| false = chạy thật với session + database
+|-------------------------------------------------------
+| Lấy company hiện tại
+|-------------------------------------------------------
 */
-$previewMode = true;
+$stmt = $pdo->prepare("SELECT id, company_name FROM companies WHERE user_id = ?");
+$stmt->execute([$user['id']]);
+$company = $stmt->fetch(PDO::FETCH_ASSOC);
 
-function safeRedirect($path) {
-    header("Location: " . $path);
-    exit;
+if (!$company) {
+    setFlash('error', 'Please complete company profile first.');
+    redirect('/Uniworksmohinhhoa/company/profile.php?setup=1');
 }
 
-function formatAppStatus($status) {
-    $status = strtolower(trim((string)$status));
-    if ($status === 'pending') return 'Pending';
-    if ($status === 'reviewed') return 'Reviewed';
-    if ($status === 'approved') return 'Approved';
-    if ($status === 'rejected') return 'Rejected';
-    return ucfirst($status);
-}
+/*
+|-------------------------------------------------------
+| Query applicants của company hiện tại
+|-------------------------------------------------------
+*/
+$sql = "
+    SELECT 
+        a.id,
+        a.student_id,
+        a.job_id,
+        a.cv_url,
+        a.status,
+        a.admin_approved,
+        a.company_approved,
+        u.id AS student_user_id,
+        u.full_name AS student_name,
+        s.student_code,
+        s.class_name,
+        s.gpa,
+        j.title AS job_title,
+        ir.id AS registration_id,
+        ir.start_date,
+        ir.end_date,
+        ir.status AS internship_status
+    FROM applications a
+    INNER JOIN students s ON a.student_id = s.id
+    INNER JOIN users u ON s.user_id = u.id
+    INNER JOIN jobs j ON a.job_id = j.id
+    LEFT JOIN internship_registrations ir ON ir.application_id = a.id
+    WHERE j.company_id = ?
+";
 
-function badgeClass($status) {
-    $status = strtolower(trim((string)$status));
-    if (in_array($status, ['pending', 'reviewed', 'approved', 'rejected'], true)) {
-        return $status;
-    }
-    return 'pending';
-}
+$params = [$company['id']];
 
-function makeInitials($name) {
-    $parts = preg_split('/\s+/', trim((string)$name));
-    $initials = '';
-    foreach ($parts as $p) {
-        if ($p !== '') {
-            $initials .= strtoupper(substr($p, 0, 1));
-        }
-        if (strlen($initials) >= 2) {
-            break;
-        }
-    }
-    return $initials ?: 'NA';
-}
-
-$statusFilter = $_GET['status'] ?? 'all';
-
-if ($previewMode) {
-    $company = [
-        'id' => 1,
-        'company_name' => 'Uniworks'
-    ];
-
-    $totalApplications = 1284;
-    $newToday = 48;
-    $inReview = 156;
-    $approved = 22;
-
-    $applications = [
-        [
-            'id' => 1,
-            'status' => 'pending',
-            'applied_at' => '2026-04-11 08:30:00',
-            'cv_url' => '#',
-            'admin_approved' => 0,
-            'student_id' => 1,
-            'student_code' => 'SE001',
-            'class_name' => 'IS01',
-            'gpa' => '3.92',
-            'student_user_id' => 101,
-            'student_name' => 'Thị Trâm Nguyễn Kiều',
-            'student_email' => 'alex.j@example.com',
-            'major_name' => 'Information Systems',
-            'job_title' => 'Software Engineer Intern'
-        ],
-        [
-            'id' => 2,
-            'status' => 'reviewed',
-            'applied_at' => '2026-04-10 10:15:00',
-            'cv_url' => '#',
-            'admin_approved' => 0,
-            'student_id' => 2,
-            'student_code' => 'SE002',
-            'class_name' => 'IS02',
-            'gpa' => '4.00',
-            'student_user_id' => 102,
-            'student_name' => 'Thị Hạnh Hồng Nguyễn',
-            'student_email' => 'm.garcia@example.com',
-            'major_name' => 'Computer Science',
-            'job_title' => 'UI/UX Design Intern'
-        ],
-        [
-            'id' => 3,
-            'status' => 'approved',
-            'applied_at' => '2026-04-09 09:00:00',
-            'cv_url' => '#',
-            'admin_approved' => 1,
-            'student_id' => 3,
-            'student_code' => 'SE003',
-            'class_name' => 'IS03',
-            'gpa' => '3.75',
-            'student_user_id' => 103,
-            'student_name' => 'Anh Tú Hoàng Kim',
-            'student_email' => 'slee@example.com',
-            'major_name' => 'Business Administration',
-            'job_title' => 'Marketing Intern'
-        ],
-        [
-            'id' => 4,
-            'status' => 'rejected',
-            'applied_at' => '2026-04-08 14:20:00',
-            'cv_url' => '#',
-            'admin_approved' => 0,
-            'student_id' => 4,
-            'student_code' => 'SE004',
-            'class_name' => 'IS04',
-            'gpa' => '3.58',
-            'student_user_id' => 104,
-            'student_name' => 'Thị Lê Yến',
-            'student_email' => 'jordan@example.com',
-            'major_name' => 'Information Systems',
-            'job_title' => 'Business Analyst Intern'
-        ],
-        [
-            'id' => 5,
-            'status' => 'reviewed',
-            'applied_at' => '2026-04-07 16:40:00',
-            'cv_url' => '#',
-            'admin_approved' => 0,
-            'student_id' => 5,
-            'student_code' => 'SE005',
-            'class_name' => 'IS05',
-            'gpa' => '3.88',
-            'student_user_id' => 105,
-            'student_name' => 'Tôi yêu bạn',
-            'student_email' => 'riley@example.com',
-            'major_name' => 'Computer Science',
-            'job_title' => 'Data Analyst Intern'
-        ]
-    ];
-
-    if ($statusFilter !== 'all') {
-        $applications = array_values(array_filter($applications, function ($item) use ($statusFilter) {
-            return $item['status'] === $statusFilter;
-        }));
-    }
-
-    $success = null;
-    $error = null;
-} else {
-    if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] ?? '') !== 'company') {
-        safeRedirect('../public/login.php');
-    }
-
-    $user = $_SESSION['user'];
-
-    $stmt = $pdo->prepare("SELECT * FROM companies WHERE user_id = ?");
-    $stmt->execute([$user['id']]);
-    $company = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$company) {
-        if (function_exists('setFlash')) {
-            setFlash('error', 'Company profile not found.');
-        }
-        safeRedirect('../public/login.php');
-    }
-
-    $sql = "
-        SELECT a.id, a.status, a.applied_at, a.cv_url, a.admin_approved,
-               s.id AS student_id, s.student_code, s.class_name, s.gpa,
-               u.id AS student_user_id, u.full_name AS student_name, u.email AS student_email,
-               m.name AS major_name,
-               j.title AS job_title
-        FROM applications a
-        JOIN students s ON a.student_id = s.id
-        JOIN users u ON s.user_id = u.id
-        LEFT JOIN majors m ON s.major_id = m.id
-        JOIN jobs j ON a.job_id = j.id
-        WHERE j.company_id = ?
+if ($keyword !== '') {
+    $sql .= "
+        AND (
+            u.full_name LIKE ?
+            OR j.title LIKE ?
+            OR s.student_code LIKE ?
+        )
     ";
+    $searchValue = '%' . $keyword . '%';
+    $params[] = $searchValue;
+    $params[] = $searchValue;
+    $params[] = $searchValue;
+}
 
-    $params = [$company['id']];
+$sql .= " ORDER BY a.id DESC";
 
-    if ($statusFilter !== 'all') {
-        $sql .= " AND a.status = ?";
-        $params[] = $statusFilter;
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+function renderApplicationStatus(array $app): string {
+    if ((int)$app['admin_approved'] === 0) {
+        return 'Waiting for school approval';
     }
 
-    $sql .= " ORDER BY a.applied_at DESC";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ((int)$app['admin_approved'] === -1) {
+        return 'Rejected by school';
+    }
 
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*)
-        FROM applications a
-        JOIN jobs j ON a.job_id = j.id
-        WHERE j.company_id = ?
-    ");
-    $stmt->execute([$company['id']]);
-    $totalApplications = (int)$stmt->fetchColumn();
+    if ((int)$app['admin_approved'] === 1 && (int)$app['company_approved'] === 0) {
+        return 'Waiting for company decision';
+    }
 
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*)
-        FROM applications a
-        JOIN jobs j ON a.job_id = j.id
-        WHERE j.company_id = ? AND DATE(a.applied_at) = CURDATE()
-    ");
-    $stmt->execute([$company['id']]);
-    $newToday = (int)$stmt->fetchColumn();
+    if ((int)$app['company_approved'] === 1) {
+        return 'Accepted by company';
+    }
 
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*)
-        FROM applications a
-        JOIN jobs j ON a.job_id = j.id
-        WHERE j.company_id = ? AND a.status = 'reviewed'
-    ");
-    $stmt->execute([$company['id']]);
-    $inReview = (int)$stmt->fetchColumn();
+    if ((int)$app['company_approved'] === -1) {
+        return 'Rejected by company';
+    }
 
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*)
-        FROM applications a
-        JOIN jobs j ON a.job_id = j.id
-        WHERE j.company_id = ? AND a.status = 'approved'
-    ");
-    $stmt->execute([$company['id']]);
-    $approved = (int)$stmt->fetchColumn();
-
-    $success = function_exists('getFlash') ? getFlash('success') : null;
-    $error = function_exists('getFlash') ? getFlash('error') : null;
+    return ucfirst(str_replace('_', ' ', $app['status'] ?? 'pending'));
 }
+
+function renderApplicationBadgeClass(array $app): string {
+    if ((int)$app['admin_approved'] === 0) {
+        return 'pending';
+    }
+
+    if ((int)$app['admin_approved'] === -1) {
+        return 'rejected';
+    }
+
+    if ((int)$app['admin_approved'] === 1 && (int)$app['company_approved'] === 0) {
+        return 'reviewing';
+    }
+
+    if ((int)$app['company_approved'] === 1) {
+        return 'accepted';
+    }
+
+    if ((int)$app['company_approved'] === -1) {
+        return 'rejected';
+    }
+
+    return 'default';
+}
+
+function renderInternshipBadgeClass(?string $status): string {
+    $status = strtolower((string)$status);
+
+    if ($status === 'ongoing') {
+        return 'ongoing';
+    }
+
+    if ($status === 'completed') {
+        return 'completed';
+    }
+
+    return 'default';
+}
+
+define('NOTIF_PAGE', 'reports');
+require_once '../includes/notifications.php';
+include '../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Applications</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-</head>
-<body>
+
+<style>
+.company-page-header{
+    margin-bottom: 24px;
+}
+.company-page-header h1{
+    margin: 0 0 8px;
+    font-size: 44px;
+    line-height: 1.1;
+    color: #1f2233;
+    font-weight: 800;
+}
+.company-page-header p{
+    margin: 0;
+    font-size: 18px;
+    color: #7a8096;
+}
+
+.company-search-card,
+.company-table-card{
+    background:#fff;
+    border-radius:28px;
+    padding:24px;
+    border:1px solid #eeebf8;
+    box-shadow:0 10px 28px rgba(31,34,51,.05);
+}
+
+.company-search-card{
+    margin-bottom:24px;
+}
+
+.company-search-card h3{
+    margin:0 0 16px;
+    font-size:20px;
+    color:#1f2233;
+}
+
+.company-search-form{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+}
+
+.company-search-input{
+    flex:1;
+    min-width:240px;
+    height:56px;
+    border:1px solid #ddd9ef;
+    border-radius:18px;
+    padding:0 18px;
+    font-size:16px;
+    outline:none;
+    background:#faf9ff;
+}
+
+.company-search-input:focus{
+    border-color:#cdbdff;
+    background:#fff;
+}
+
+.company-search-btn,
+.company-clear-btn,
+.company-action-btn,
+.company-link-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    border:none;
+    cursor:pointer;
+    border-radius:16px;
+    padding:12px 18px;
+    font-weight:700;
+    font-size:14px;
+    transition:.2s ease;
+}
+
+.company-search-btn{
+    background:#cfc0ff;
+    color:#1f2233;
+}
+
+.company-search-btn:hover{
+    background:#c3b1ff;
+}
+
+.company-clear-btn{
+    background:#f4f1ff;
+    color:#5d647a;
+}
+
+.company-clear-btn:hover{
+    background:#ece6ff;
+}
+
+.company-table-wrap{
+    overflow-x:auto;
+}
+
+.company-table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1320px;
+}
+
+.company-table th{
+    text-align:left;
+    padding:16px 14px;
+    color:#737b94;
+    font-size:14px;
+    font-weight:800;
+    border-bottom:1px solid #ece9f7;
+}
+
+.company-table td{
+    padding:16px 14px;
+    border-bottom:1px solid #f0edf8;
+    vertical-align:middle;
+    color:#1f2233;
+    font-size:15px;
+}
+
+.company-table tr:last-child td{
+    border-bottom:none;
+}
+
+.company-status-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.company-status-badge.pending{
+    background:#f6e8a6;
+    color:#a36a00;
+}
+
+.company-status-badge.accepted{
+    background:#d8f2df;
+    color:#187a3d;
+}
+
+.company-status-badge.reviewing{
+    background:#dce7ff;
+    color:#265ad9;
+}
+
+.company-status-badge.rejected{
+    background:#ffe1e1;
+    color:#ad3e3e;
+}
+
+.company-status-badge.default{
+    background:#f1edff;
+    color:#6157aa;
+}
+
+.company-internship-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.company-internship-badge.ongoing{
+    background:#dce7ff;
+    color:#265ad9;
+}
+
+.company-internship-badge.completed{
+    background:#d8f2df;
+    color:#187a3d;
+}
+
+.company-internship-badge.default{
+    background:#f1edff;
+    color:#6157aa;
+}
+
+.company-action-group{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.company-link-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    border:none;
+    cursor:pointer;
+    border-radius:14px;
+    padding:10px 16px;
+    font-weight:700;
+    font-size:14px;
+    transition:.2s ease;
+    white-space:nowrap;
+}
+
+.company-link-btn:hover{
+    transform:translateY(-1px);
+}
+
+.company-link-btn.cv{
+    background:#f0d86a;
+    color:#1f2233;
+}
+
+.company-link-btn.cv:hover{
+    background:#e7cf5d;
+}
+
+.company-link-btn.profile{
+    background:#cfc0ff;
+    color:#1f2233;
+}
+
+.company-link-btn.profile:hover{
+    background:#c1afff;
+}
+
+.company-action-btn.accept{
+    background:#dff7e8;
+    color:#156b39;
+}
+
+.company-action-btn.accept:hover{
+    background:#d1f1dc;
+}
+
+.company-action-btn.reject{
+    background:#ffe1e1;
+    color:#a33a3a;
+}
+
+.company-action-btn.reject:hover{
+    background:#ffd3d3;
+}
+
+.company-empty{
+    text-align:center;
+    padding:40px 20px;
+    color:#6e7690;
+}
+
+.company-section-title{
+    margin:0 0 18px;
+    font-size:22px;
+    color:#1f2233;
+    font-weight:800;
+}
+
+.company-date{
+    color:#4f5770;
+    font-weight:600;
+}
+
+.company-muted{
+    color:#8c93aa;
+    font-size:14px;
+    font-weight:600;
+}
+
+@media (max-width: 768px){
+    .company-page-header h1{
+        font-size:34px;
+    }
+
+    .company-search-btn,
+    .company-clear-btn{
+        width:100%;
+    }
+}
+</style>
+
 <div class="company-shell">
     <aside class="company-sidebar">
         <div>
             <div class="company-brand">
-<<<<<<< Updated upstream
-                <h2>Uniworks</h2>
-                <p>Recruiter Portal</p>
-            </div>
-
-            <nav class="company-nav">
-                <a href="dashboard.php">Dashboard</a>
-                <a class="active" href="applications.php">Applicants</a>
-                <a href="manage_job.php">Jobs</a>
-                <a href="messages.php">Messages</a>
-                <a href="profile.php">Profile</a>
-=======
-                <div class="company-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="company-brand__logo">✦</div>
                 <div class="company-brand__text">
                     <h3><?= htmlspecialchars($company['company_name']) ?></h3>
                     <p>Recruiter Portal</p>
@@ -280,91 +441,54 @@ if ($previewMode) {
                 <a href="/Uniworksmohinhhoa/company/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/company/applications.php" class="active">Applicants</a>
                 <a href="/Uniworksmohinhhoa/company/manage_job.php">Jobs</a>
-                <a href="/Uniworksmohinhhoa/company/internship_history.php">History</a>
-                <a href="/Uniworksmohinhhoa/company/evaluations.php">Evaluations</a>
-                <a href="/Uniworksmohinhhoa/company/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/company/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/company/profile.php">Profile</a>
->>>>>>> Stashed changes
             </nav>
         </div>
 
-        <div class="company-signout">
-            <a href="../public/logout.php">Sign Out</a>
+        <div class="company-sidebar__footer">
+            <a href="/Uniworksmohinhhoa/public/logout.php">↩ Logout</a>
         </div>
     </aside>
 
     <main class="company-main">
-        <div class="topbar">
-            <div class="search-box">
-                <input type="text" placeholder="Search for applicants, skills, or schools..." disabled>
-            </div>
-
-            <div class="topbar-actions">
-                <a class="btn btn-primary" href="create_job.php">+ Post New Job</a>
-            </div>
+        <div class="company-page-header">
+            <h1>Student Applicants</h1>
+            <p>Review students who applied to your internship posts.</p>
         </div>
 
-        <?php if (!empty($success)): ?>
-            <div class="flash success"><?php echo htmlspecialchars($success); ?></div>
+        <?php if ($flash = getFlash()): ?>
+            <div class="flash <?= htmlspecialchars($flash['type']) ?>" style="margin-bottom: 18px;">
+                <?= htmlspecialchars($flash['message']) ?>
+            </div>
         <?php endif; ?>
 
-        <?php if (!empty($error)): ?>
-            <div class="flash error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
+        <div class="company-search-card">
+            <h3>Search Applicants</h3>
+            <form method="GET" action="/Uniworksmohinhhoa/company/applications.php" class="company-search-form">
+                <input
+                    type="text"
+                    name="keyword"
+                    class="company-search-input"
+                    placeholder="Search by name, job, student code..."
+                    value="<?= htmlspecialchars($keyword) ?>"
+                >
+                <button type="submit" class="company-search-btn">Search</button>
 
-        <h1 class="page-title">Student Applicants</h1>
-        <p class="page-subtitle">Review and manage recent applications from top university talent across the country.</p>
-
-        <div class="stats-4">
-            <div class="stat-card purple">
-                <h4>Total Applications</h4>
-                <div class="stat-value"><?php echo $totalApplications; ?></div>
-            </div>
-
-            <div class="stat-card yellow">
-                <h4>New Today</h4>
-                <div class="stat-value"><?php echo $newToday; ?></div>
-            </div>
-
-            <div class="stat-card purple">
-                <h4>In Review</h4>
-                <div class="stat-value"><?php echo $inReview; ?></div>
-            </div>
-
-            <div class="stat-card yellow">
-                <h4>Approved</h4>
-                <div class="stat-value"><?php echo $approved; ?></div>
-            </div>
+                <?php if ($keyword !== ''): ?>
+                    <a href="/Uniworksmohinhhoa/company/applications.php" class="company-clear-btn">Clear</a>
+                <?php endif; ?>
+            </form>
         </div>
 
-        <div class="card">
-            <div class="tabs">
-                <a class="<?php echo $statusFilter === 'all' ? 'active' : ''; ?>" href="applications.php?status=all">All Applicants</a>
-                <a class="<?php echo $statusFilter === 'pending' ? 'active' : ''; ?>" href="applications.php?status=pending">Pending</a>
-                <a class="<?php echo $statusFilter === 'reviewed' ? 'active' : ''; ?>" href="applications.php?status=reviewed">Reviewed</a>
-                <a class="<?php echo $statusFilter === 'approved' ? 'active' : ''; ?>" href="applications.php?status=approved">Approved</a>
-                <a class="<?php echo $statusFilter === 'rejected' ? 'active' : ''; ?>" href="applications.php?status=rejected">Rejected</a>
-            </div>
+        <div class="company-table-card">
+            <h3 class="company-section-title">Applicants List</h3>
 
-            <div class="table-wrap">
-                <table class="company-table">
-                    <thead>
-                        <tr>
-                            <th>Applicant Name</th>
-                            <th>Major</th>
-                            <th>GPA</th>
-                            <th>Status</th>
-                            <th>Applied For</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($applications)): ?>
+            <?php if (!empty($applications)): ?>
+                <div class="company-table-wrap">
+                    <table class="company-table">
+                        <thead>
                             <tr>
-<<<<<<< Updated upstream
-                                <td colspan="6">No applications found.</td>
-=======
-                                <th>App ID</th>
                                 <th>Applicant</th>
                                 <th>Job</th>
                                 <th>GPA</th>
@@ -375,65 +499,20 @@ if ($previewMode) {
                                 <th>Duration</th>
                                 <th>Internship Status</th>
                                 <th>Action</th>
->>>>>>> Stashed changes
                             </tr>
-                        <?php else: ?>
+                        </thead>
+                        <tbody>
                             <?php foreach ($applications as $app): ?>
                                 <tr>
-<<<<<<< Updated upstream
-=======
-                                    <td><span style="font-size:12px;font-weight:700;color:#7a8096;background:#f4f1ff;padding:4px 10px;border-radius:999px;">APP-<?= $app['id'] ?></span></td>
                                     <td><?= htmlspecialchars($app['student_name']) ?></td>
                                     <td><?= htmlspecialchars($app['job_title']) ?></td>
                                     <td><?= htmlspecialchars(number_format((float)$app['gpa'], 2)) ?></td>
->>>>>>> Stashed changes
                                     <td>
-                                        <div class="applicant-cell">
-                                            <div class="avatar"><?php echo htmlspecialchars(makeInitials($app['student_name'])); ?></div>
-                                            <div class="applicant-meta">
-                                                <strong><?php echo htmlspecialchars($app['student_name']); ?></strong>
-                                                <span><?php echo htmlspecialchars($app['student_email']); ?></span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($app['major_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($app['gpa'] ?? 'N/A'); ?></td>
-                                    <td>
-                                        <span class="badge <?php echo badgeClass($app['status']); ?>">
-                                            <?php echo htmlspecialchars(formatAppStatus($app['status'])); ?>
+                                        <span class="company-status-badge <?= renderApplicationBadgeClass($app) ?>">
+                                            <?= htmlspecialchars(renderApplicationStatus($app)) ?>
                                         </span>
                                     </td>
-                                    <td><?php echo htmlspecialchars($app['job_title']); ?></td>
                                     <td>
-<<<<<<< Updated upstream
-                                        <div class="actions">
-                                            <a class="btn btn-outline btn-sm" href="candidate_detail.php?id=<?php echo $app['id']; ?>">View Profile</a>
-                                            <a class="btn btn-outline btn-sm" href="evaluate.php?id=<?php echo $app['id']; ?>">Evaluate</a>
-                                            <a class="btn btn-outline btn-sm" href="messages.php?student_user_id=<?php echo $app['student_user_id']; ?>">Message</a>
-                                        </div>
-
-                                        <?php if (!$previewMode): ?>
-                                            <div class="actions" style="margin-top:8px;">
-                                                <form action="../actions/company/review_application_action.php" method="POST">
-                                                    <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                    <input type="hidden" name="status" value="reviewed">
-                                                    <button class="btn btn-outline btn-sm" type="submit">Review</button>
-                                                </form>
-
-                                                <form action="../actions/company/review_application_action.php" method="POST">
-                                                    <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                    <input type="hidden" name="status" value="approved">
-                                                    <button class="btn btn-outline btn-sm" type="submit">Approve</button>
-                                                </form>
-
-                                                <form action="../actions/company/review_application_action.php" method="POST">
-                                                    <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                    <input type="hidden" name="status" value="rejected">
-                                                    <button class="btn btn-outline btn-sm" type="submit">Reject</button>
-                                                </form>
-                                            </div>
-                                        <?php endif; ?>
-=======
                                         <?php if (!empty($app['cv_url'])): ?>
                                             <a 
                                                 href="/Uniworksmohinhhoa/<?= htmlspecialchars($app['cv_url']) ?>" 
@@ -485,8 +564,10 @@ if ($previewMode) {
         View Profile
     </a>
 
-    <a href="/Uniworksmohinhhoa/company/messages.php?receiver_id=<?= $app['student_id'] ?>"
-       class="company-link-btn" style="background:#e7dcff;color:#4a3f8f;">
+    <a 
+        href="/Uniworksmohinhhoa/company/messages.php?receiver_id=<?= htmlspecialchars($app['student_user_id'] ?? '') ?>" 
+        class="company-link-btn" style="background:#d8f2df;color:#187a3d;"
+    >
         💬 Message
     </a>
 
@@ -513,17 +594,19 @@ if ($previewMode) {
         </form>
     <?php endif; ?>
 </div>
-
->>>>>>> Stashed changes
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="company-empty">
+                    No applicants found.
+                </div>
+            <?php endif; ?>
         </div>
     </main>
 </div>
-</body>
-</html>
+
+<?php include '../includes/footer.php'; ?>

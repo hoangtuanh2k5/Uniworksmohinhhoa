@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 <?php
 require_once '../includes/auth.php';
 require_once '../config/db.php';
@@ -13,24 +11,16 @@ if ($job_id <= 0) {
     redirect('/Uniworksmohinhhoa/student/jobs.php');
 }
 
-// Tự động đóng job quá deadline trước khi hiển thị
-closeExpiredJobs($pdo);
-
 $stmt = $pdo->prepare("
     SELECT 
         j.*,
-        c.id        AS company_id,
         c.company_name,
         c.website,
         c.address,
         c.industry_type,
-        c.tax_code,
-        u.phone     AS company_phone,
-        u.avatar_url AS company_avatar,
         ip.name AS period_name
     FROM jobs j
     INNER JOIN companies c ON j.company_id = c.id
-    INNER JOIN users u     ON c.user_id = u.id
     LEFT JOIN internship_periods ip ON j.period_id = ip.id
     WHERE j.id = ?
 ");
@@ -42,6 +32,7 @@ if (!$job) {
     redirect('/Uniworksmohinhhoa/student/jobs.php');
 }
 
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 <style>
@@ -220,58 +211,13 @@ include '../includes/header.php';
         flex-wrap:wrap;
     }
 }
-/* layout columns */
-.job-detail-left  { min-width:0; }
-.job-detail-right { min-width:0; }
-
-/* tab panels */
-.job-tab-panel { display:none; }
-.job-tab-panel.active { display:block; }
-
-/* clickable tabs */
-.job-tabs span { cursor:pointer; }
-
-/* company info in tab */
-.job-company-header{
-    display:flex;
-    align-items:center;
-    gap:18px;
-    margin-bottom:20px;
-}
-.job-company-avatar{
-    width:72px;
-    height:72px;
-    border-radius:18px;
-    object-fit:cover;
-    border:2px solid #efedf7;
-    flex-shrink:0;
-}
-.job-company-avatar-fallback{
-    width:72px;
-    height:72px;
-    border-radius:18px;
-    background:linear-gradient(135deg,#6d5efc,#9f8cff);
-    color:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:28px;
-    font-weight:700;
-    flex-shrink:0;
-}
 </style>
 
 <div class="student-shell">
     <aside class="student-sidebar">
         <div>
             <div class="student-brand">
-                <div class="student-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="student-brand__logo">✦</div>
                 <div class="student-brand__text">
                     <h3><?= htmlspecialchars($user['full_name']) ?></h3>
                     <p>Aspiring Student</p>
@@ -282,10 +228,10 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/student/applications.php">Applications</a>
                 <a href="/Uniworksmohinhhoa/student/jobs.php" class="active">Internships</a>
-                <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/student/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
                 <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
-                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation<?php if(!empty($notif['evaluations']) && $notif['evaluations']>0): ?><span class="notif-badge"><?= $notif['evaluations'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -334,58 +280,24 @@ include '../includes/header.php';
                     </div>
 
                     <div class="job-tabs">
-                        <span class="active" data-tab="description">Description</span>
-                        <span data-tab="requirements">Requirements</span>
-                        <span data-tab="company">Company</span>
+                        <span class="active">Description</span>
+                        <span>Requirements</span>
+                        <span>Company</span>
                     </div>
                 </div>
 
-                <!-- Tab: Description -->
-                <div class="job-section-card job-tab-panel active" id="tab-description">
+                <div class="job-section-card">
                     <h3>Job Description</h3>
-                    <p><?= nl2br(htmlspecialchars($job['description'] ?? 'No description provided.')) ?></p>
+                    <p>
+                        <?= nl2br(htmlspecialchars($job['description'] ?? 'No description provided.')) ?>
+                    </p>
                 </div>
 
-                <!-- Tab: Requirements -->
-                <div class="job-section-card job-tab-panel" id="tab-requirements">
+                <div class="job-section-card">
                     <h3>Requirements</h3>
-                    <p><?= nl2br(htmlspecialchars($job['requirements'] ?? 'No requirements provided.')) ?></p>
-                </div>
-
-                <!-- Tab: Company -->
-                <div class="job-section-card job-tab-panel" id="tab-company">
-                    <h3>About the Company</h3>
-
-                    <div class="job-company-header">
-                        <?php if (!empty($job['company_avatar'])): ?>
-                            <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($job['company_avatar']) ?>"
-                                 alt="<?= htmlspecialchars($job['company_name']) ?>"
-                                 class="job-company-avatar">
-                        <?php else: ?>
-                            <div class="job-company-avatar-fallback">
-                                <?= strtoupper(substr($job['company_name'], 0, 1)) ?>
-                            </div>
-                        <?php endif; ?>
-                        <div>
-                            <div style="font-size:22px;font-weight:800;color:#1f2233;"><?= htmlspecialchars($job['company_name']) ?></div>
-                            <div style="font-size:15px;color:#7a8096;margin-top:4px;"><?= htmlspecialchars($job['industry_type'] ?: 'Technology') ?></div>
-                        </div>
-                    </div>
-
-                    <ul class="job-side-list">
-                        <li><span>Industry</span><strong><?= htmlspecialchars($job['industry_type'] ?: '—') ?></strong></li>
-                        <li><span>Address</span><strong><?= htmlspecialchars($job['address'] ?: '—') ?></strong></li>
-                        <li><span>Website</span>
-                            <strong>
-                                <?php if (!empty($job['website'])): ?>
-                                    <a href="<?= htmlspecialchars($job['website']) ?>" target="_blank"
-                                       style="color:#6d5efc;"><?= htmlspecialchars($job['website']) ?></a>
-                                <?php else: ?>—<?php endif; ?>
-                            </strong>
-                        </li>
-                        <li><span>Phone</span><strong><?= htmlspecialchars($job['company_phone'] ?: '—') ?></strong></li>
-                        <li><span>Tax Code</span><strong><?= htmlspecialchars($job['tax_code'] ?: '—') ?></strong></li>
-                    </ul>
+                    <p>
+                        <?= nl2br(htmlspecialchars($job['requirements'] ?? 'No requirements provided.')) ?>
+                    </p>
                 </div>
             </div>
 
@@ -413,23 +325,3 @@ include '../includes/header.php';
 </div>
 
 <?php include '../includes/footer.php'; ?>
-<script>
-document.querySelectorAll('.job-tabs span').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-        // Bỏ active tất cả tabs
-        document.querySelectorAll('.job-tabs span').forEach(function(t) {
-            t.classList.remove('active');
-        });
-        // Ẩn tất cả panels
-        document.querySelectorAll('.job-tab-panel').forEach(function(p) {
-            p.classList.remove('active');
-        });
-        // Active tab được click
-        this.classList.add('active');
-        // Hiện panel tương ứng
-        var target = document.getElementById('tab-' + this.dataset.tab);
-        if (target) target.classList.add('active');
-    });
-});
-</script>
->>>>>>> Stashed changes

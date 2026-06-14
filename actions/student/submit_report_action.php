@@ -4,7 +4,8 @@ require_once '../../config/db.php';
 require_once '../../includes/functions.php';
 requireRole('student');
 
-$user            = currentUser();
+$user = currentUser();
+
 $registration_id = (int)($_POST['registration_id'] ?? 0);
 $content         = trim($_POST['content'] ?? '');
 
@@ -13,6 +14,29 @@ if ($registration_id <= 0 || $content === '') {
     redirect('/Uniworksmohinhhoa/student/report.php');
 }
 
+// Validate file upload — bắt buộc
+if (empty($_FILES['report_file']['name'])) {
+    setFlash('error', 'Please upload your report file.');
+    redirect('/Uniworksmohinhhoa/student/report.php');
+}
+
+$file    = $_FILES['report_file'];
+$allowed = ['application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+$maxSize = 10 * 1024 * 1024; // 10MB
+
+if (!in_array($file['type'], $allowed)) {
+    setFlash('error', 'Only PDF, DOC, DOCX files are allowed.');
+    redirect('/Uniworksmohinhhoa/student/report.php');
+}
+
+if ($file['size'] > $maxSize) {
+    setFlash('error', 'File must be under 10MB.');
+    redirect('/Uniworksmohinhhoa/student/report.php');
+}
+
+// Lấy student
 $stmt = $pdo->prepare("SELECT id FROM students WHERE user_id = ?");
 $stmt->execute([$user['id']]);
 $student = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -23,6 +47,7 @@ if (!$student) {
 }
 
 try {
+    // Kiểm tra registration thuộc student này
     $stmt = $pdo->prepare("
         SELECT ir.id, ir.status
         FROM internship_registrations ir
@@ -42,6 +67,7 @@ try {
         redirect('/Uniworksmohinhhoa/student/report.php');
     }
 
+    // Không cho nộp trùng
     $stmt = $pdo->prepare("SELECT id FROM reports WHERE registration_id = ?");
     $stmt->execute([$registration_id]);
     if ($stmt->fetch()) {
@@ -49,35 +75,19 @@ try {
         redirect('/Uniworksmohinhhoa/student/report.php');
     }
 
-    // Xử lý upload file (tuỳ chọn)
-    $file_url = null;
-    if (!empty($_FILES['report_file']['name'])) {
-        $file   = $_FILES['report_file'];
-        $allowed = ['application/pdf',
-                    'application/msword',
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-        $maxSize = 10 * 1024 * 1024;
+    // Upload file
+    $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = 'report_' . $user['id'] . '_' . time() . '.' . $ext;
+    $dest     = __DIR__ . '/../../uploads/reports/' . $filename;
 
-        if (!in_array($file['type'], $allowed)) {
-            setFlash('error', 'Only PDF, DOC, DOCX files are allowed for the report.');
-            redirect('/Uniworksmohinhhoa/student/report.php');
-        }
-        if ($file['size'] > $maxSize) {
-            setFlash('error', 'File must be under 10MB.');
-            redirect('/Uniworksmohinhhoa/student/report.php');
-        }
-
-        $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = 'report_' . $student['id'] . '_' . time() . '.' . $ext;
-        $dest     = __DIR__ . '/../../uploads/reports/' . $filename;
-
-        if (!move_uploaded_file($file['tmp_name'], $dest)) {
-            setFlash('error', 'File upload failed. Please try again.');
-            redirect('/Uniworksmohinhhoa/student/report.php');
-        }
-        $file_url = 'uploads/reports/' . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        setFlash('error', 'Failed to upload file. Please try again.');
+        redirect('/Uniworksmohinhhoa/student/report.php');
     }
 
+    $file_url = 'uploads/reports/' . $filename;
+
+    // Lưu report
     $pdo->prepare("
         INSERT INTO reports (registration_id, content, file_url, submitted_at)
         VALUES (?, ?, ?, NOW())

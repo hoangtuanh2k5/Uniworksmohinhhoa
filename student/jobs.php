@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 <?php
 require_once '../includes/auth.php';
 require_once '../config/db.php';
@@ -8,10 +6,10 @@ requireRole('student');
 
 $user = currentUser();
 
-$keyword = trim($_GET['keyword'] ?? '');
+// Auto-close jobs past deadline (global, all companies)
+$pdo->exec("UPDATE jobs SET status = 'closed' WHERE status = 'open' AND deadline < CURDATE()");
 
-// Tự động đóng job quá deadline
-closeExpiredJobs($pdo);
+$keyword = trim($_GET['keyword'] ?? '');
 
 /*
 |-------------------------------------------------------
@@ -61,6 +59,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 
@@ -335,13 +334,7 @@ include '../includes/header.php';
     <aside class="student-sidebar">
         <div>
             <div class="student-brand">
-                <div class="student-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="student-brand__logo">✦</div>
                 <div class="student-brand__text">
                     <h3><?= htmlspecialchars($user['full_name']) ?></h3>
                     <p>Aspiring Student</p>
@@ -352,10 +345,10 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/student/applications.php">Applications</a>
                 <a href="/Uniworksmohinhhoa/student/jobs.php" class="active">Internships</a>
-                <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/student/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
                 <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
-                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation<?php if(!empty($notif['evaluations']) && $notif['evaluations']>0): ?><span class="notif-badge"><?= $notif['evaluations'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -458,4 +451,3 @@ include '../includes/header.php';
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> Stashed changes

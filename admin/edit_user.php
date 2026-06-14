@@ -1,83 +1,25 @@
 <?php
-require_once __DIR__ . '/../includes/db_connect.php';
-require_once __DIR__ . '/admin_layout.php';
+require_once '../includes/auth.php';
+require_once '../config/db.php';
+require_once '../includes/functions.php';
+requireRole('admin');
 
-$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-$message = '';
-if (isset($_GET['error'])) {
-    $message = match ($_GET['error']) {
-        'missing_fields' => 'Full name and email are required.',
-        'invalid_email' => 'Email format is invalid.',
-        'update_failed' => 'Could not update user.',
-        default => 'Could not update user.',
-    };
-}
+$id = (int)($_GET['id'] ?? 0);
 
-$stmt = $conn->prepare('SELECT * FROM users WHERE id = ?');
-$stmt->bind_param('i', $id);
-$stmt->execute();
-$user = $stmt->get_result()->fetch_assoc();
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->execute([$id]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
-    die('User not found.');
+    redirect('users.php');
 }
 
-ob_start();
-?>
-<a href="users.php" class="admin-button--soft"><i class="fas fa-arrow-left"></i> Back</a>
-<?php
-$actionsHtml = ob_get_clean();
+$flash = getFlash();
 
-admin_render_start(
-    'Edit User | Placement Hub',
-    'users',
-    'Edit User',
-    'Update account details and access role',
-    $actionsHtml
-);
+require_once '../includes/notifications.php';
+include '../includes/header.php';
 ?>
 
-<<<<<<< Updated upstream
-<?php if ($message !== ''): ?>
-    <div class="admin-alert admin-alert--error"><?php echo htmlspecialchars($message); ?></div>
-<?php endif; ?>
-
-<section class="admin-card" style="max-width: 780px;">
-    <form method="POST" action="../actions/admin/update_user_action.php?id=<?php echo $id; ?>">
-        <div class="admin-form-grid--2">
-            <div>
-                <label class="admin-form-label" for="full_name">Full Name</label>
-                <input id="full_name" type="text" name="full_name" class="admin-input" value="<?php echo htmlspecialchars($user['full_name']); ?>" required>
-            </div>
-            <div>
-                <label class="admin-form-label" for="email">Email</label>
-                <input id="email" type="email" name="email" class="admin-input" value="<?php echo htmlspecialchars($user['email']); ?>" required>
-            </div>
-            <div>
-                <label class="admin-form-label" for="phone">Phone</label>
-                <input id="phone" type="text" name="phone" class="admin-input" value="<?php echo htmlspecialchars((string) $user['phone']); ?>">
-            </div>
-            <div>
-                <label class="admin-form-label" for="role">Role</label>
-                <select id="role" name="role" class="admin-filter">
-                    <option value="student" <?php echo $user['role'] === 'student' ? 'selected' : ''; ?>>Student</option>
-                    <option value="company" <?php echo $user['role'] === 'company' ? 'selected' : ''; ?>>Company</option>
-                    <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="admin-form-actions">
-            <button type="submit" class="admin-button">Save Changes</button>
-            <a href="users.php" class="admin-button--soft">Cancel</a>
-        </div>
-    </form>
-</section>
-
-<?php
-admin_render_end();
-$conn->close();
-=======
 <div class="admin-shell">
     <aside class="admin-sidebar">
         <div>
@@ -85,10 +27,9 @@ $conn->close();
             <nav class="admin-nav">
                 <a href="/Uniworksmohinhhoa/admin/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/admin/users.php" class="active">Users</a>
-                <a href="/Uniworksmohinhhoa/admin/company_approvals.php">Companies</a>
                 <a href="/Uniworksmohinhhoa/admin/applications.php">Applications</a>
                 <a href="/Uniworksmohinhhoa/admin/monitoring.php">Monitoring</a>
-                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports</a>
+                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports<?php if(!empty($notif['reports']) && $notif['reports']>0): ?><span class="notif-badge"><?= $notif['reports'] ?></span><?php endif; ?></a>
             </nav>
         </div>
         <div class="admin-sidebar__footer">
@@ -160,4 +101,3 @@ $conn->close();
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> Stashed changes

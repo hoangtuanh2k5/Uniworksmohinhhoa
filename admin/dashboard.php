@@ -1,7 +1,4 @@
 <?php
-<<<<<<< Updated upstream
-require __DIR__ . '/dashboard_page.php';
-=======
 require_once '../includes/auth.php';
 require_once '../config/db.php';
 require_once '../includes/functions.php';
@@ -58,44 +55,7 @@ $companiesStmt = $pdo->query("
 ");
 $topCompanies = $companiesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-/*
-|-------------------------------------------------------
-| All internship posts
-|-------------------------------------------------------
-*/
-$totalJobs     = (int)$pdo->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
-$openJobs      = (int)$pdo->query("SELECT COUNT(*) FROM jobs WHERE status = 'open'")->fetchColumn();
-$closedJobs    = (int)$pdo->query("SELECT COUNT(*) FROM jobs WHERE status = 'closed'")->fetchColumn();
-
-$filterJob     = $_GET['job_status'] ?? 'all';
-$jobSearch     = trim($_GET['job_search'] ?? '');
-$allowedFilter = ['all', 'open', 'closed'];
-if (!in_array($filterJob, $allowedFilter)) $filterJob = 'all';
-
-$jobSql = "
-    SELECT j.id, j.title, j.deadline, j.slots, j.status, j.created_at,
-           c.company_name, ip.name AS period_name
-    FROM jobs j
-    INNER JOIN companies c  ON j.company_id = c.id
-    LEFT  JOIN internship_periods ip ON j.period_id = ip.id
-    WHERE 1=1
-";
-$jobParams = [];
-if ($filterJob !== 'all') {
-    $jobSql .= " AND j.status = ?";
-    $jobParams[] = $filterJob;
-}
-if ($jobSearch !== '') {
-    $jobSql .= " AND (j.title LIKE ? OR c.company_name LIKE ?)";
-    $like = '%' . $jobSearch . '%';
-    $jobParams[] = $like;
-    $jobParams[] = $like;
-}
-$jobSql .= " ORDER BY j.id DESC";
-$jobStmt = $pdo->prepare($jobSql);
-$jobStmt->execute($jobParams);
-$allJobs = $jobStmt->fetchAll(PDO::FETCH_ASSOC);
-
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 
@@ -626,10 +586,9 @@ function adminBadgeClass(?string $status): string {
             <nav class="admin-nav">
                 <a href="/Uniworksmohinhhoa/admin/dashboard.php" class="active">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/admin/users.php">Users</a>
-                <a href="/Uniworksmohinhhoa/admin/company_approvals.php">Companies</a>
                 <a href="/Uniworksmohinhhoa/admin/applications.php">Applications</a>
                 <a href="/Uniworksmohinhhoa/admin/monitoring.php">Monitoring</a>
-                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports</a>
+                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports<?php if(!empty($notif['reports']) && $notif['reports']>0): ?><span class="notif-badge"><?= $notif['reports'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -809,98 +768,8 @@ function adminBadgeClass(?string $status): string {
                     </tbody>
                 </table>
             </section>
-
-            <!-- ══ INTERNSHIP POSTS SECTION ══ -->
-            <section style="margin-top:28px;">
-
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
-                    <div class="admin-stat-card yellow" style="min-height:auto;padding:16px 20px;">
-                        <p class="admin-stat-label" style="margin-bottom:4px;">Total Posts</p>
-                        <h3 class="admin-stat-value" style="font-size:32px;"><?= $totalJobs ?></h3>
-                    </div>
-                    <div class="admin-stat-card purple" style="min-height:auto;padding:16px 20px;">
-                        <p class="admin-stat-label" style="margin-bottom:4px;">Open</p>
-                        <h3 class="admin-stat-value" style="font-size:32px;"><?= $openJobs ?></h3>
-                    </div>
-                    <div style="background:#f1edff;border-radius:22px;padding:16px 20px;border:1px solid rgba(0,0,0,.03);">
-                        <p style="margin:0 0 4px;color:#53607d;font-size:15px;font-weight:600;">Closed</p>
-                        <h3 style="margin:0;font-size:32px;font-weight:800;color:#11162d;"><?= $closedJobs ?></h3>
-                    </div>
-                </div>
-
-                <form method="GET" action=""
-                      style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;">
-                    <div style="flex:1;min-width:200px;">
-                        <input type="text" name="job_search"
-                               value="<?= htmlspecialchars($jobSearch) ?>"
-                               placeholder="Search by title or company..."
-                               style="width:100%;height:42px;border:1px solid #ddd9ef;border-radius:14px;padding:0 14px;font-size:14px;outline:none;font-family:inherit;background:#fff;">
-                    </div>
-                    <div>
-                        <select name="job_status"
-                                style="height:42px;border:1px solid #ddd9ef;border-radius:14px;padding:0 14px;font-size:14px;outline:none;font-family:inherit;background:#fff;min-width:130px;">
-                            <option value="all"    <?= $filterJob==='all'    ? 'selected' : '' ?>>All Status</option>
-                            <option value="open"   <?= $filterJob==='open'   ? 'selected' : '' ?>>Open</option>
-                            <option value="closed" <?= $filterJob==='closed' ? 'selected' : '' ?>>Closed</option>
-                        </select>
-                    </div>
-                    <button type="submit"
-                            style="height:42px;padding:0 20px;border:none;border-radius:14px;background:#cfc6ff;color:#1f2233;font-size:14px;font-weight:700;cursor:pointer;">
-                        Filter
-                    </button>
-                    <?php if ($filterJob !== 'all' || $jobSearch !== ''): ?>
-                        <a href="/Uniworksmohinhhoa/admin/dashboard.php"
-                           style="height:42px;padding:0 16px;border-radius:14px;background:#f6f2ff;color:#5e6680;font-size:14px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;">
-                            Reset
-                        </a>
-                    <?php endif; ?>
-                </form>
-
-                <div class="admin-table-panel">
-                    <div class="admin-table-head">
-                        <h2>Internship Posts</h2>
-                        <span style="font-size:14px;color:#7a8198;font-weight:600;"><?= count($allJobs) ?> post(s)</span>
-                    </div>
-
-                    <?php if (empty($allJobs)): ?>
-                        <div style="padding:36px;text-align:center;color:#7a8198;">No internship posts found.</div>
-                    <?php else: ?>
-                        <table class="admin-simple-table">
-                            <thead>
-                                <tr>
-                                    <?php foreach (['Job ID','Title','Company','Period','Deadline','Slots','Status','Posted'] as $h): ?>
-                                        <th><?= $h ?></th>
-                                    <?php endforeach; ?>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($allJobs as $job): ?>
-                                <tr>
-                                    <td><span style="font-size:12px;font-weight:700;color:#7a8096;background:#f4f1ff;padding:4px 9px;border-radius:999px;">JOB-<?= $job['id'] ?></span></td>
-                                    <td style="font-weight:700;color:#17172b;"><?= htmlspecialchars($job['title']) ?></td>
-                                    <td style="color:#4d566f;"><?= htmlspecialchars($job['company_name']) ?></td>
-                                    <td style="color:#4d566f;font-size:13px;"><?= htmlspecialchars($job['period_name'] ?? '—') ?></td>
-                                    <td style="color:#4d566f;font-size:13px;white-space:nowrap;"><?= htmlspecialchars($job['deadline']) ?></td>
-                                    <td style="color:#4d566f;text-align:center;"><?= $job['slots'] ?></td>
-                                    <td>
-                                        <span style="display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:800;
-                                              background:<?= $job['status']==='open' ? '#d8f2df' : '#f1edff' ?>;
-                                              color:<?= $job['status']==='open' ? '#187a3d' : '#6157aa' ?>;">
-                                            <?= ucfirst($job['status']) ?>
-                                        </span>
-                                    </td>
-                                    <td style="color:#7a8096;font-size:12px;white-space:nowrap;"><?= date('M d, Y', strtotime($job['created_at'])) ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </div>
-            </section>
-
-        </div><!-- end admin-dashboard-page -->
+        </div>
     </main>
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> Stashed changes

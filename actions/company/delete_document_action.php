@@ -11,8 +11,7 @@ $doc_id  = (int)($_GET['id'] ?? 0);
 
 // Chỉ cho xóa document của chính company mình
 $stmt = $pdo->prepare("
-    SELECT cd.doc_url
-    FROM company_documents cd
+    SELECT cd.doc_url FROM company_documents cd
     INNER JOIN companies c ON cd.company_id = c.id
     WHERE cd.id = ? AND c.user_id = ?
 ");
@@ -25,9 +24,9 @@ if (!$doc) {
 }
 
 // Xóa file vật lý
-$filePath = __DIR__ . '/../../' . $doc['doc_url'];
-if (file_exists($filePath)) {
-    @unlink($filePath);
+$path = __DIR__ . '/../../uploads/company_docs/' . $doc['doc_url'];
+if (file_exists($path)) {
+    @unlink($path);
 }
 
 $pdo->prepare("DELETE FROM company_documents WHERE id = ?")->execute([$doc_id]);

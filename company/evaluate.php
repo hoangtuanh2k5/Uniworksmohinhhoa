@@ -1,138 +1,295 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-session_start();
+require_once '../includes/auth.php';
 require_once '../config/db.php';
 require_once '../includes/functions.php';
+requireCompanyComplete($pdo);
+
+$user = currentUser();
+$registration_id = (int)($_GET['id'] ?? 0);
+$flash = getFlash();
+
+if ($registration_id <= 0) {
+    setFlash('error', 'Invalid internship registration.');
+    redirect('/Uniworksmohinhhoa/company/applications.php');
+}
 
 /*
-|--------------------------------------------------------------------------
-| PREVIEW MODE
-|--------------------------------------------------------------------------
-| true  = xem giao diện ngay, không cần login/db đủ dữ liệu
-| false = chạy thật với session + database
+|-------------------------------------------------------
+| Lấy company hiện tại
+|-------------------------------------------------------
 */
-$previewMode = true;
+$stmt = $pdo->prepare("SELECT id, company_name FROM companies WHERE user_id = ?");
+$stmt->execute([$user['id']]);
+$company = $stmt->fetch(PDO::FETCH_ASSOC);
 
-function safeRedirect($path) {
-    header("Location: " . $path);
-    exit;
+if (!$company) {
+    setFlash('error', 'Company profile not found.');
+    redirect('/Uniworksmohinhhoa/company/profile.php?setup=1');
 }
 
-if ($previewMode) {
-    $data = [
-        'application_id' => 1,
-        'status' => 'approved',
-        'student_code' => 'SE001',
-        'student_name' => 'Thị Trâm Nguyễn Kiều',
-        'job_title' => 'Software Engineer Intern',
-        'registration_id' => 1
-    ];
+/*
+|-------------------------------------------------------
+| Lấy internship registration thuộc company này
+|-------------------------------------------------------
+*/
+$stmt = $pdo->prepare("
+    SELECT 
+        ir.id AS registration_id,
+        ir.start_date,
+        ir.end_date,
+        ir.status AS internship_status,
+        u.full_name AS student_name,
+        u.email,
+        u.phone,
+        s.student_code,
+        s.class_name,
+        s.gpa,
+        j.title AS job_title,
+        c.company_name,
+        e.id AS evaluation_id,
+        e.score,
+        e.feedback,
+        e.file_url,
+        e.created_at
+    FROM internship_registrations ir
+    INNER JOIN applications a ON ir.application_id = a.id
+    INNER JOIN students s ON a.student_id = s.id
+    INNER JOIN users u ON s.user_id = u.id
+    INNER JOIN jobs j ON a.job_id = j.id
+    INNER JOIN companies c ON j.company_id = c.id
+    LEFT JOIN evaluations e ON e.registration_id = ir.id
+    WHERE ir.id = ?
+      AND c.id = ?
+");
+$stmt->execute([$registration_id, $company['id']]);
+$item = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $evaluation = [
-        'score' => '92.50',
-        'feedback' => "Strong technical foundation and good communication.\nShows initiative and learns quickly."
-    ];
-
-    $success = null;
-    $error = null;
-} else {
-    if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] ?? '') !== 'company') {
-        safeRedirect('../public/login.php');
-    }
-
-    $user = $_SESSION['user'];
-    $appId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-    if ($appId <= 0) {
-        if (function_exists('setFlash')) {
-            setFlash('error', 'Invalid application id.');
-        }
-        safeRedirect('applications.php');
-    }
-
-    $stmt = $pdo->prepare("SELECT * FROM companies WHERE user_id = ?");
-    $stmt->execute([$user['id']]);
-    $company = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$company) {
-        if (function_exists('setFlash')) {
-            setFlash('error', 'Company profile not found.');
-        }
-        safeRedirect('../public/login.php');
-    }
-
-    $stmt = $pdo->prepare("
-        SELECT a.id AS application_id, a.status,
-               s.student_code,
-               u.full_name AS student_name,
-               j.title AS job_title,
-               ir.id AS registration_id
-        FROM applications a
-        JOIN students s ON a.student_id = s.id
-        JOIN users u ON s.user_id = u.id
-        JOIN jobs j ON a.job_id = j.id
-        LEFT JOIN internship_registrations ir ON ir.application_id = a.id
-        WHERE a.id = ? AND j.company_id = ?
-    ");
-    $stmt->execute([$appId, $company['id']]);
-    $data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$data) {
-        if (function_exists('setFlash')) {
-            setFlash('error', 'Application not found.');
-        }
-        safeRedirect('applications.php');
-    }
-
-    $evaluation = null;
-    if (!empty($data['registration_id'])) {
-        $stmt = $pdo->prepare("
-            SELECT *
-            FROM evaluations
-            WHERE registration_id = ? AND evaluator_role = 'company'
-            LIMIT 1
-        ");
-        $stmt->execute([$data['registration_id']]);
-        $evaluation = $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    $success = function_exists('getFlash') ? getFlash('success') : null;
-    $error = function_exists('getFlash') ? getFlash('error') : null;
+if (!$item) {
+    setFlash('error', 'Internship record not found or access denied.');
+    redirect('/Uniworksmohinhhoa/company/applications.php');
 }
+
+require_once '../includes/notifications.php';
+include '../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Evaluate Candidate</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-</head>
-<body>
+
+<style>
+.company-eval-page{
+    padding:8px 6px 24px;
+}
+.company-eval-header{
+    margin-bottom:24px;
+}
+.company-eval-header h1{
+    margin:0 0 10px;
+    font-size:44px;
+    line-height:1.08;
+    color:#1a1f36;
+    font-weight:800;
+}
+.company-eval-header p{
+    margin:0;
+    font-size:18px;
+    color:#707894;
+    line-height:1.6;
+}
+.company-eval-layout{
+    display:grid;
+    grid-template-columns:1.2fr .9fr;
+    gap:24px;
+    align-items:start;
+}
+.company-eval-card{
+    background:#fff;
+    border:1px solid #ece9f7;
+    border-radius:30px;
+    padding:28px;
+    box-shadow:0 12px 28px rgba(31,34,51,.05);
+}
+.company-eval-card h2{
+    margin:0 0 18px;
+    font-size:24px;
+    color:#161b34;
+    font-weight:800;
+}
+.company-eval-info{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:18px;
+}
+.company-eval-box{
+    background:#fcfbff;
+    border:1px solid #f0ebfb;
+    border-radius:22px;
+    padding:18px;
+}
+.company-eval-box span{
+    display:block;
+    margin-bottom:8px;
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color:#8b93ab;
+}
+.company-eval-box strong{
+    color:#1f2233;
+    font-size:18px;
+    line-height:1.5;
+}
+.company-eval-form{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+}
+.company-eval-form label{
+    font-size:16px;
+    font-weight:700;
+    color:#25283a;
+    display:block;
+    margin-bottom:10px;
+}
+.company-eval-form input,
+.company-eval-form textarea{
+    width:100%;
+    border:1.5px solid #ddd9ef;
+    border-radius:18px;
+    background:#fff;
+    padding:15px 16px;
+    font-size:16px;
+    color:#1f2233;
+    outline:none;
+    transition:.2s ease;
+    box-sizing:border-box;
+}
+.company-eval-form textarea{
+    min-height:180px;
+    resize:vertical;
+}
+.company-eval-form input:focus,
+.company-eval-form textarea:focus{
+    border-color:#c7b7ff;
+    box-shadow:0 0 0 4px rgba(207,192,255,.18);
+}
+.company-eval-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+}
+.company-eval-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:140px;
+    height:48px;
+    padding:0 18px;
+    border:none;
+    border-radius:16px;
+    text-decoration:none;
+    font-size:15px;
+    font-weight:800;
+    transition:.2s ease;
+    cursor:pointer;
+}
+.company-eval-btn:hover{
+    transform:translateY(-1px);
+}
+.company-eval-btn.primary{
+    background:#cfc0ff;
+    color:#1f2233;
+}
+.company-eval-btn.primary:hover{
+    background:#c2b1ff;
+}
+.company-eval-btn.ghost{
+    background:#f6f2ff;
+    color:#5e6680;
+}
+.company-eval-btn.ghost:hover{
+    background:#eee7ff;
+}
+.company-eval-note{
+    background:#fff7d6;
+    border:1px solid #efe0a0;
+    border-radius:24px;
+    padding:22px;
+    color:#5f6478;
+    line-height:1.7;
+}
+.company-eval-note h3{
+    margin:0 0 10px;
+    font-size:22px;
+    color:#1a1f36;
+    font-weight:800;
+}
+.company-eval-note p{
+    margin:0;
+}
+.company-eval-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:9px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:800;
+}
+.company-eval-badge.ongoing{
+    background:#dce7ff;
+    color:#265ad9;
+}
+.company-eval-badge.completed{
+    background:#d8f2df;
+    color:#187a3d;
+}
+.company-eval-badge.default{
+    background:#f1edff;
+    color:#6157aa;
+}
+.company-eval-readonly{
+    background:#fcfbff;
+    border:1px solid #f0ebfb;
+    border-radius:22px;
+    padding:18px;
+}
+.company-eval-readonly p{
+    margin:0;
+    color:#4f5770;
+    line-height:1.8;
+    white-space:pre-line;
+}
+.company-eval-meta{
+    margin-top:12px;
+    color:#8b93ab;
+    font-size:14px;
+    font-weight:600;
+}
+@media (max-width: 1000px){
+    .company-eval-layout{
+        grid-template-columns:1fr;
+    }
+}
+@media (max-width: 768px){
+    .company-eval-header h1{
+        font-size:36px;
+    }
+    .company-eval-header p{
+        font-size:16px;
+    }
+    .company-eval-info{
+        grid-template-columns:1fr;
+    }
+    .company-eval-btn{
+        width:100%;
+    }
+}
+</style>
+
 <div class="company-shell">
     <aside class="company-sidebar">
         <div>
             <div class="company-brand">
-<<<<<<< Updated upstream
-                <h2>Uniworks</h2>
-                <p>Recruiter Portal</p>
-            </div>
-
-            <nav class="company-nav">
-                <a href="dashboard.php">Dashboard</a>
-                <a class="active" href="applications.php">Applicants</a>
-                <a href="manage_job.php">Jobs</a>
-                <a href="messages.php">Messages</a>
-                <a href="profile.php">Profile</a>
-=======
-                <div class="company-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="company-brand__logo">✦</div>
                 <div class="company-brand__text">
                     <h3><?= htmlspecialchars($company['company_name']) ?></h3>
                     <p>Recruiter Portal</p>
@@ -142,80 +299,29 @@ if ($previewMode) {
             <nav class="company-nav">
                 <a href="/Uniworksmohinhhoa/company/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/company/applications.php" class="active">Applicants</a>
-                <a href="/Uniworksmohinhhoa/company/manage_jobs.php">Jobs</a>
-                <a href="/Uniworksmohinhhoa/company/internship_history.php">History</a>
-                <a href="/Uniworksmohinhhoa/company/evaluations.php">Evaluations</a>
-                <a href="/Uniworksmohinhhoa/company/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/company/manage_job.php">Jobs</a>
+                <a href="/Uniworksmohinhhoa/company/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/company/profile.php">Profile</a>
->>>>>>> Stashed changes
             </nav>
         </div>
 
-        <div class="company-signout">
-            <a href="../public/logout.php">Sign Out</a>
+        <div class="company-sidebar__footer">
+            <a href="/Uniworksmohinhhoa/public/logout.php">↩ Logout</a>
         </div>
     </aside>
 
     <main class="company-main">
-        <div class="topbar">
-            <div></div>
-            <div class="topbar-actions">
-                <a class="btn btn-primary" href="applications.php">Back to Applicants</a>
+        <div class="company-eval-page">
+            <div class="company-eval-header">
+                <h1>Intern Evaluation</h1>
+                <p>Evaluate the student after the internship has been completed.</p>
             </div>
-        </div>
 
-        <?php if (!empty($success)): ?>
-            <div class="flash success"><?php echo htmlspecialchars($success); ?></div>
-        <?php endif; ?>
-
-        <?php if (!empty($error)): ?>
-            <div class="flash error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
-        <h1 class="page-title">Evaluate Candidate</h1>
-        <p class="page-subtitle">Write your assessment for this student.</p>
-
-        <div class="card">
-            <p style="margin-bottom:10px;"><strong>Student:</strong> <?php echo htmlspecialchars($data['student_name']); ?></p>
-            <p style="margin-bottom:10px;"><strong>Student Code:</strong> <?php echo htmlspecialchars($data['student_code']); ?></p>
-            <p style="margin-bottom:18px;"><strong>Position:</strong> <?php echo htmlspecialchars($data['job_title']); ?></p>
-
-            <?php if (empty($data['registration_id'])): ?>
-                <div class="flash error">This candidate cannot be evaluated yet. Please approve the application first.</div>
-            <?php else: ?>
-                <form action="../actions/company/evaluate_action.php" method="POST">
-                    <input type="hidden" name="registration_id" value="<?php echo htmlspecialchars($data['registration_id']); ?>">
-                    <input type="hidden" name="application_id" value="<?php echo htmlspecialchars($data['application_id']); ?>">
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Score</label>
-                            <input
-                                type="number"
-                                name="score"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                value="<?php echo htmlspecialchars($evaluation['score'] ?? ''); ?>"
-                                required
-                            >
-                        </div>
-
-                        <div class="form-group full">
-                            <label>Feedback</label>
-                            <textarea name="feedback" required><?php echo htmlspecialchars($evaluation['feedback'] ?? ''); ?></textarea>
-                        </div>
-                    </div>
-
-                    <?php if ($previewMode): ?>
-                        <button class="btn btn-primary" type="button">Save Evaluation</button>
-                    <?php else: ?>
-                        <button class="btn btn-primary" type="submit">Save Evaluation</button>
-                    <?php endif; ?>
-                </form>
+            <?php if ($flash): ?>
+                <div class="flash <?= htmlspecialchars($flash['type']) ?>" style="margin-bottom:18px;">
+                    <?= htmlspecialchars($flash['message']) ?>
+                </div>
             <?php endif; ?>
-<<<<<<< Updated upstream
-=======
 
             <div class="company-eval-layout">
                 <section class="company-eval-card">
@@ -290,6 +396,13 @@ if ($previewMode) {
                     <div class="company-eval-readonly">
                         <p><strong>Score:</strong> <?= htmlspecialchars($item['score']) ?>/10</p>
                         <p><strong>Feedback:</strong><br><?= nl2br(htmlspecialchars($item['feedback'])) ?></p>
+                        <?php if (!empty($item['file_url'])): ?>
+                            <p style="margin-top:12px;">
+                                <a href="/Uniworksmohinhhoa/<?= htmlspecialchars($item['file_url']) ?>"
+                                   target="_blank"
+                                   style="color:#7f4df3;font-weight:700;">📎 View Attached File</a>
+                            </p>
+                        <?php endif; ?>
                     </div>
 
                     <div class="company-eval-meta">
@@ -323,22 +436,21 @@ if ($previewMode) {
                         </div>
 
                         <div>
-                            <label for="eval_file">Attach Evaluation File <span style="font-weight:400;color:#8a8fa3;">(PDF / DOC / DOCX / JPG / PNG, max 10MB — optional)</span></label>
+                            <label for="eval_file">Attach Evaluation File <span style="font-weight:400;color:#7f8496;">(optional — PDF, DOC, DOCX, JPG, PNG — max 10MB)</span></label>
                             <input type="file" id="eval_file" name="eval_file"
                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                   style="width:100%;border:1.5px solid #ddd9ef;border-radius:14px;padding:12px 16px;font-size:15px;background:#fff;outline:none;box-sizing:border-box;">
+                                   style="width:100%;padding:12px 16px;border:1.5px solid #ddd9ef;border-radius:18px;background:#fff;font-size:15px;outline:none;box-sizing:border-box;">
                         </div>
 
                         <div class="company-eval-actions">
-                            <a href="/Uniworksmohinhhoa/company/evaluations.php" class="company-eval-btn ghost">Back</a>
+                            <a href="/Uniworksmohinhhoa/company/applications.php" class="company-eval-btn ghost">Back</a>
                             <button type="submit" class="company-eval-btn primary">Submit Evaluation</button>
                         </div>
                     </form>
                 <?php endif; ?>
             </div>
->>>>>>> Stashed changes
         </div>
     </main>
 </div>
-</body>
-</html>
+
+<?php include '../includes/footer.php'; ?>

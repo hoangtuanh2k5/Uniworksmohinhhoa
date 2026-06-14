@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 <?php
 require_once '../includes/auth.php';
 require_once '../config/db.php';
@@ -37,7 +35,6 @@ $stmt = $pdo->prepare("
         a.applied_at,
         j.title AS job_title,
         c.company_name,
-        c.user_id AS company_user_id,
         ir.id AS registration_id,
         ir.start_date,
         ir.end_date,
@@ -114,6 +111,7 @@ function studentInternshipBadgeClass(?string $status): string {
     return 'default';
 }
 
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 
@@ -318,15 +316,6 @@ include '../includes/header.php';
     background:#c1afff;
 }
 
-.student-link-btn.withdraw{
-    background:#ffe1e1;
-    color:#ad3e3e;
-}
-
-.student-link-btn.withdraw:hover{
-    background:#ffd0d0;
-}
-
 .student-empty{
     padding:40px 28px;
     text-align:center;
@@ -353,13 +342,7 @@ include '../includes/header.php';
     <aside class="student-sidebar">
         <div>
             <div class="student-brand">
-                <div class="student-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="student-brand__logo">✦</div>
                 <div class="student-brand__text">
                     <h3><?= htmlspecialchars($user['full_name']) ?></h3>
                     <p>Aspiring Student</p>
@@ -370,10 +353,10 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/student/applications.php" class="active">Applications</a>
                 <a href="/Uniworksmohinhhoa/student/jobs.php">Internships</a>
-                <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/student/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
                 <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
-                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation<?php if(!empty($notif['evaluations']) && $notif['evaluations']>0): ?><span class="notif-badge"><?= $notif['evaluations'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -408,7 +391,6 @@ include '../includes/header.php';
                         <table class="student-app-table">
                             <thead>
                                 <tr>
-                                    <th>App ID</th>
                                     <th>Company</th>
                                     <th>Job</th>
                                     <th>Applied At</th>
@@ -418,13 +400,11 @@ include '../includes/header.php';
                                     <th>Internship End</th>
                                     <th>Duration</th>
                                     <th>Internship Progress</th>
-                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($applications as $app): ?>
                                     <tr>
-                                        <td><span style="font-size:12px;font-weight:700;color:#7a8096;background:#f4f1ff;padding:4px 10px;border-radius:999px;">APP-<?= $app['id'] ?></span></td>
                                         <td>
                                             <span class="student-app-company">
                                                 <?= htmlspecialchars($app['company_name']) ?>
@@ -488,19 +468,6 @@ include '../includes/header.php';
                                                 <span class="student-app-muted">Not started</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <?php if ((int)$app['admin_approved'] === 0): ?>
-                                                <form action="/Uniworksmohinhhoa/actions/student/withdraw_application_action.php"
-                                                      method="POST"
-                                                      onsubmit="return confirm('Withdraw this application? This cannot be undone.');">
-                                                    <input type="hidden" name="application_id" value="<?= $app['id'] ?>">
-                                                    <button type="submit" class="student-link-btn withdraw">Withdraw</button>
-                                                </form>
-                                            <?php else: ?>
-                                                <a href="/Uniworksmohinhhoa/student/messages.php?receiver_id=<?= $app['company_user_id'] ?>"
-                                                   class="student-link-btn detail">💬 Message</a>
-                                            <?php endif; ?>
-                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -517,4 +484,3 @@ include '../includes/header.php';
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> Stashed changes

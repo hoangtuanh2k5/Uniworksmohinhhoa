@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $email = sanitize($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
 
-if (!$email || !$password) {
+if (empty($email) || empty($password)) {
     setFlash('error', 'Please enter email and password.');
     redirect('/Uniworksmohinhhoa/public/login.php');
 }
@@ -24,28 +24,15 @@ try {
         redirect('/Uniworksmohinhhoa/public/login.php');
     }
 
+    // Tăng độ an toàn cho session sau khi login
+    session_regenerate_id(true);
+
     $_SESSION['user'] = [
-<<<<<<< Updated upstream
         'id' => $user['id'],
         'email' => $user['email'],
         'full_name' => $user['full_name'],
-        'phone' => $user['phone'],
+        'phone' => $user['phone'] ?? null,
         'role' => $user['role']
-    ];
-
-    if ($user['role'] === 'student') {
-        redirect('/Uniworksmohinhhoa/student/dashboard.php');
-    } elseif ($user['role'] === 'company') {
-        redirect('/Uniworksmohinhhoa/company/dashboard.php');
-    } else {
-        redirect('/Uniworksmohinhhoa/admin/dashboard.php');
-=======
-        'id'         => $user['id'],
-        'email'      => $user['email'],
-        'full_name'  => $user['full_name'],
-        'phone'      => $user['phone'] ?? null,
-        'avatar_url' => $user['avatar_url'] ?? null,
-        'role'       => $user['role']
     ];
 
    if ($user['role'] === 'student') {
@@ -73,30 +60,12 @@ try {
 }
 
     if ($user['role'] === 'company') {
-        $stmt = $pdo->prepare("SELECT id, status FROM companies WHERE user_id = ?");
+        $stmt = $pdo->prepare("SELECT id FROM companies WHERE user_id = ?");
         $stmt->execute([$user['id']]);
         $company = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$company) {
             redirect('/Uniworksmohinhhoa/company/profile.php?setup=1');
-        }
-
-        if ($company['status'] === 'pending') {
-            session_destroy();
-            setFlash('error', 'Your company account is pending admin approval. Please wait.');
-            redirect('/Uniworksmohinhhoa/public/login.php');
-        }
-
-        if ($company['status'] === 'rejected') {
-            session_destroy();
-            setFlash('error', 'Your company account has been rejected. Please contact support.');
-            redirect('/Uniworksmohinhhoa/public/login.php');
-        }
-
-        if ($company['status'] === 'suspended') {
-            session_destroy();
-            setFlash('error', 'Your company account has been suspended. Please contact the administrator.');
-            redirect('/Uniworksmohinhhoa/public/login.php');
         }
 
         setFlash('success', 'Login successful! Welcome back, ' . $user['full_name'] . '.');
@@ -110,8 +79,10 @@ try {
         $_SESSION['redirect_to'] = '/Uniworksmohinhhoa/admin/dashboard.php';
         $_SESSION['prefill_email'] = $user['email'];
         redirect('/Uniworksmohinhhoa/public/login.php');
->>>>>>> Stashed changes
     }
+
+    setFlash('error', 'Invalid role.');
+    redirect('/Uniworksmohinhhoa/public/login.php');
 
 } catch (Exception $e) {
     setFlash('error', 'Login failed.');

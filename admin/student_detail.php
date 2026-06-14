@@ -33,6 +33,27 @@ if (!$student) {
     redirect('/Uniworksmohinhhoa/admin/applications.php');
 }
 
+// Lấy tất cả applications của student này
+$stmt2 = $pdo->prepare("
+    SELECT 
+        a.id,
+        a.cv_url,
+        a.status,
+        a.admin_approved,
+        a.company_approved,
+        a.applied_at,
+        j.title AS job_title,
+        c.company_name
+    FROM applications a
+    INNER JOIN jobs j ON a.job_id = j.id
+    INNER JOIN companies c ON j.company_id = c.id
+    WHERE a.student_id = ?
+    ORDER BY a.id DESC
+");
+$stmt2->execute([$student_id]);
+$applications = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 
@@ -328,10 +349,9 @@ include '../includes/header.php';
             <nav class="admin-nav">
                 <a href="/Uniworksmohinhhoa/admin/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/admin/users.php">Users</a>
-                <a href="/Uniworksmohinhhoa/admin/company_approvals.php">Companies</a>
                 <a href="/Uniworksmohinhhoa/admin/applications.php" class="active">Applications</a>
                 <a href="/Uniworksmohinhhoa/admin/monitoring.php">Monitoring</a>
-                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports</a>
+                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports<?php if(!empty($notif['reports']) && $notif['reports']>0): ?><span class="notif-badge"><?= $notif['reports'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -433,6 +453,113 @@ include '../includes/header.php';
                     </div>
                 </aside>
             </div>
+
+            <!-- ===== APPLICATIONS OF THIS STUDENT ===== -->
+            <div style="margin-top:28px;">
+                <div class="admin-app-card" style="background:#fff;border:1px solid #ece9f7;border-radius:30px;box-shadow:0 12px 28px rgba(31,34,51,.05);overflow:hidden;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:22px 28px 16px;">
+                        <h2 style="margin:0;font-size:22px;color:#161b34;font-weight:800;">
+                            All Applications
+                            <span style="margin-left:10px;display:inline-flex;align-items:center;padding:5px 12px;border-radius:999px;background:#f6f2ff;color:#6259aa;font-size:13px;font-weight:700;">
+                                <?= count($applications) ?> job(s)
+                            </span>
+                        </h2>
+                    </div>
+
+                    <?php if (empty($applications)): ?>
+                        <div style="padding:32px 28px;color:#7a8198;text-align:center;">No applications yet.</div>
+                    <?php else: ?>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:collapse;min-width:900px;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:16px 24px;background:#faf8ff;color:#74809b;font-size:13px;font-weight:800;border-bottom:1px solid #ece9f7;">Job</th>
+                                        <th style="text-align:left;padding:16px 24px;background:#faf8ff;color:#74809b;font-size:13px;font-weight:800;border-bottom:1px solid #ece9f7;">Company</th>
+                                        <th style="text-align:left;padding:16px 24px;background:#faf8ff;color:#74809b;font-size:13px;font-weight:800;border-bottom:1px solid #ece9f7;">Applied At</th>
+                                        <th style="text-align:left;padding:16px 24px;background:#faf8ff;color:#74809b;font-size:13px;font-weight:800;border-bottom:1px solid #ece9f7;">Status</th>
+                                        <th style="text-align:left;padding:16px 24px;background:#faf8ff;color:#74809b;font-size:13px;font-weight:800;border-bottom:1px solid #ece9f7;">CV</th>
+                                        <th style="text-align:left;padding:16px 24px;background:#faf8ff;color:#74809b;font-size:13px;font-weight:800;border-bottom:1px solid #ece9f7;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($applications as $app): ?>
+                                        <?php
+                                        // Status label
+                                        if ((int)$app['admin_approved'] === 0)       { $label = 'Waiting Admin';              $cls = 'pending'; }
+                                        elseif ((int)$app['admin_approved'] === -1)  { $label = 'Rejected by Admin';          $cls = 'rejected'; }
+                                        elseif ((int)$app['company_approved'] === 0) { $label = 'Approved → Waiting Company'; $cls = 'reviewing'; }
+                                        elseif ((int)$app['company_approved'] === 1) { $label = 'Accepted by Company';        $cls = 'accepted'; }
+                                        elseif ((int)$app['company_approved'] === -1){ $label = 'Rejected by Company';        $cls = 'rejected'; }
+                                        else { $label = ucfirst($app['status']); $cls = 'default'; }
+
+                                        $badgeColors = [
+                                            'pending'   => 'background:#f6e8a6;color:#a36a00;',
+                                            'reviewing' => 'background:#dce7ff;color:#265ad9;',
+                                            'accepted'  => 'background:#d8f2df;color:#187a3d;',
+                                            'rejected'  => 'background:#ffe1e1;color:#ad3e3e;',
+                                            'default'   => 'background:#f1edff;color:#6157aa;',
+                                        ];
+                                        $badgeStyle = $badgeColors[$cls] ?? $badgeColors['default'];
+                                        ?>
+                                        <tr>
+                                            <td style="padding:16px 24px;border-bottom:1px solid #f1edf8;font-weight:700;color:#1f2233;">
+                                                <?= htmlspecialchars($app['job_title']) ?>
+                                            </td>
+                                            <td style="padding:16px 24px;border-bottom:1px solid #f1edf8;color:#4d566f;font-weight:600;">
+                                                <?= htmlspecialchars($app['company_name']) ?>
+                                            </td>
+                                            <td style="padding:16px 24px;border-bottom:1px solid #f1edf8;color:#6e7690;">
+                                                <?= htmlspecialchars(date('d M Y', strtotime($app['applied_at']))) ?>
+                                            </td>
+                                            <td style="padding:16px 24px;border-bottom:1px solid #f1edf8;">
+                                                <span style="display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:800;white-space:nowrap;<?= $badgeStyle ?>">
+                                                    <?= htmlspecialchars($label) ?>
+                                                </span>
+                                            </td>
+                                            <td style="padding:16px 24px;border-bottom:1px solid #f1edf8;">
+                                                <?php if (!empty($app['cv_url'])): ?>
+                                                    <a href="/Uniworksmohinhhoa/<?= htmlspecialchars($app['cv_url']) ?>"
+                                                       target="_blank"
+                                                       style="display:inline-flex;align-items:center;padding:7px 14px;border-radius:10px;background:#f0d86a;color:#1f2233;font-size:13px;font-weight:700;text-decoration:none;">
+                                                        📄 CV
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span style="color:#9093a2;font-size:13px;">—</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="padding:16px 24px;border-bottom:1px solid #f1edf8;">
+                                                <?php if ((int)$app['admin_approved'] === 0): ?>
+                                                    <div style="display:flex;gap:8px;">
+                                                        <form action="/Uniworksmohinhhoa/actions/admin/approve_application_action.php" method="POST" style="display:inline;">
+                                                            <input type="hidden" name="application_id" value="<?= $app['id'] ?>">
+                                                            <input type="hidden" name="redirect_back" value="/Uniworksmohinhhoa/admin/student_detail.php?id=<?= $student_id ?>">
+                                                            <button type="submit"
+                                                                style="display:inline-flex;align-items:center;height:36px;padding:0 14px;border:none;border-radius:10px;background:#cfc6ff;color:#1f2233;font-size:13px;font-weight:800;cursor:pointer;">
+                                                                Approve
+                                                            </button>
+                                                        </form>
+                                                        <form action="/Uniworksmohinhhoa/actions/admin/reject_application_action.php" method="POST" style="display:inline;">
+                                                            <input type="hidden" name="application_id" value="<?= $app['id'] ?>">
+                                                            <input type="hidden" name="redirect_back" value="/Uniworksmohinhhoa/admin/student_detail.php?id=<?= $student_id ?>">
+                                                            <button type="submit"
+                                                                style="display:inline-flex;align-items:center;height:36px;padding:0 14px;border:none;border-radius:10px;background:#efd867;color:#1f2233;font-size:13px;font-weight:800;cursor:pointer;">
+                                                                Reject
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span style="color:#7c849c;font-size:13px;font-weight:700;">Reviewed</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
         </div>
     </main>
 </div>

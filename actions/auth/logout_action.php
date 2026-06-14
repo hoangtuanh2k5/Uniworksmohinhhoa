@@ -1,19 +1,22 @@
 <?php
-require_once '../../includes/functions.php';
+// Redirect về logout.php thay vì xử lý trực tiếp ở đây
+// để tránh path resolution issues khi được include từ nhiều nơi
+require_once __DIR__ . '/../../includes/functions.php';
 
-session_unset();
+$_SESSION = [];
+
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(
+        session_name(), '', time() - 42000,
+        $params["path"], $params["domain"],
+        $params["secure"], $params["httponly"]
+    );
+}
+
 session_destroy();
 
-<<<<<<< Updated upstream
 session_start();
-setFlash('success', 'Logged out successfully.');
-
-redirect('/Uniworksmohinhhoa/public/login.php');
-=======
-// Restart session chỉ để set flash
-session_start();
-session_regenerate_id(true);
-
 $_SESSION['flash'] = [
     'type'    => 'success',
     'message' => 'You have been logged out successfully.'
@@ -21,4 +24,3 @@ $_SESSION['flash'] = [
 
 header("Location: /Uniworksmohinhhoa/public/login.php");
 exit;
->>>>>>> Stashed changes

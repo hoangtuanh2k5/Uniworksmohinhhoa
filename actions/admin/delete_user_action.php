@@ -1,25 +1,18 @@
 <?php
-<<<<<<< Updated upstream
-require_once __DIR__ . '/../../includes/db_connect.php';
-=======
 require_once '../../config/db.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/functions.php';
->>>>>>> Stashed changes
 
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    header('Location: ../../admin/users.php?error=invalid_id');
-    exit;
+requireRole('admin');
+
+$id = (int)($_GET['id'] ?? 0);
+
+if ($id <= 0) {
+    setFlash('error', 'Invalid user ID.');
+    redirect('/Uniworksmohinhhoa/admin/users.php');
 }
 
-$id = (int) $_GET['id'];
-$stmt = $conn->prepare('DELETE FROM users WHERE id = ?');
-$stmt->bind_param('i', $id);
+$pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$id]);
 
-if ($stmt->execute()) {
-    header('Location: ../../admin/users.php?msg=deleted');
-    exit;
-}
-
-header('Location: ../../admin/users.php?error=delete_failed');
-exit;
+setFlash('success', 'User deleted successfully.');
+redirect('/Uniworksmohinhhoa/admin/users.php');

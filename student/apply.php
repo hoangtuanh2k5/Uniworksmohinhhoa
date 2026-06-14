@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 <?php
 require_once '../includes/auth.php';
 require_once '../config/db.php';
@@ -22,6 +20,16 @@ if (!$student) {
     redirect('/Uniworksmohinhhoa/student/profile.php?setup=1');
 }
 
+// Kiểm tra đã hoàn thành internship chưa
+$stmtDone = $pdo->prepare("
+    SELECT ir.id FROM internship_registrations ir
+    INNER JOIN applications a ON ir.application_id = a.id
+    WHERE a.student_id = ? AND ir.status = 'completed'
+    LIMIT 1
+");
+$stmtDone->execute([$student['id']]);
+$alreadyCompleted = $stmtDone->fetch();
+
 $stmt = $pdo->prepare("
     SELECT 
         j.id,
@@ -39,6 +47,7 @@ if (!$job) {
     redirect('/Uniworksmohinhhoa/student/jobs.php');
 }
 
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 
@@ -46,13 +55,7 @@ include '../includes/header.php';
     <aside class="student-sidebar">
         <div>
             <div class="student-brand">
-                <div class="student-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="student-brand__logo">✦</div>
                 <div class="student-brand__text">
                     <h3><?= htmlspecialchars($user['full_name']) ?></h3>
                     <p>Aspiring Student</p>
@@ -63,10 +66,10 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/student/applications.php">Applications</a>
                 <a href="/Uniworksmohinhhoa/student/jobs.php" class="active">Internships</a>
-                <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/student/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
                 <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
-                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation<?php if(!empty($notif['evaluations']) && $notif['evaluations']>0): ?><span class="notif-badge"><?= $notif['evaluations'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -93,6 +96,11 @@ include '../includes/header.php';
                 <strong>Company:</strong> <?= htmlspecialchars($job['company_name']) ?>
             </p>
 
+            <?php if ($alreadyCompleted): ?>
+                <div class="flash error" style="margin-bottom:18px;">
+                    You have already completed an internship. You are not allowed to apply for new jobs.
+                </div>
+            <?php else: ?>
             <form action="/Uniworksmohinhhoa/actions/student/apply_job_action.php" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
 
@@ -109,9 +117,9 @@ include '../includes/header.php';
 </div>
                 <button type="submit" class="student-btn">Submit Application</button>
             </form>
+            <?php endif; ?>
         </div>
     </main>
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> Stashed changes

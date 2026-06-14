@@ -33,8 +33,7 @@ $stmt = $pdo->prepare("
         ir.status,
         j.title AS job_title,
         c.company_name,
-        r.id AS report_id,
-        r.file_url AS report_file_url
+        r.id AS report_id
     FROM internship_registrations ir
     INNER JOIN applications a ON ir.application_id = a.id
     INNER JOIN jobs j ON a.job_id = j.id
@@ -47,6 +46,15 @@ $stmt = $pdo->prepare("
 $stmt->execute([$student['id']]);
 $internship = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Lấy chi tiết report nếu đã nộp
+$reportDetail = null;
+if (!empty($internship['report_id'])) {
+    $stmt2 = $pdo->prepare("SELECT content, file_url, submitted_at FROM reports WHERE id = ?");
+    $stmt2->execute([$internship['report_id']]);
+    $reportDetail = $stmt2->fetch(PDO::FETCH_ASSOC);
+}
+
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 
@@ -265,13 +273,7 @@ include '../includes/header.php';
     <aside class="student-sidebar">
         <div>
             <div class="student-brand">
-                <div class="student-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="student-brand__logo">✦</div>
                 <div class="student-brand__text">
                     <h3><?= htmlspecialchars($user['full_name']) ?></h3>
                     <p>Aspiring Student</p>
@@ -282,10 +284,10 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/student/applications.php">Applications</a>
                 <a href="/Uniworksmohinhhoa/student/jobs.php">Internships</a>
-                <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/student/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
                 <a href="/Uniworksmohinhhoa/student/report.php" class="active">Final Report</a>
-                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation<?php if(!empty($notif['evaluations']) && $notif['evaluations']>0): ?><span class="notif-badge"><?= $notif['evaluations'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -361,13 +363,11 @@ include '../includes/header.php';
                         <div class="student-report-note" style="background:#f6f2ff; border-color:#e8ddff;">
                             <h3>Report Already Submitted</h3>
                             <p>Your final report has already been submitted for this internship.</p>
-                            <?php if (!empty($internship['report_file_url'])): ?>
-                                <p style="margin-top:12px;">
-                                    <a href="/Uniworksmohinhhoa/<?= htmlspecialchars($internship['report_file_url']) ?>"
+                            <?php if (!empty($reportDetail['file_url'])): ?>
+                                <p style="margin-top:10px;">
+                                    <a href="/Uniworksmohinhhoa/<?= htmlspecialchars($reportDetail['file_url']) ?>"
                                        target="_blank"
-                                       style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:12px;background:#cfc6f6;color:#17172b;font-size:14px;font-weight:700;text-decoration:none;">
-                                        📄 View Submitted File
-                                    </a>
+                                       style="color:#7f4df3;font-weight:700;">📎 View Submitted File</a>
                                 </p>
                             <?php endif; ?>
                         </div>
@@ -386,10 +386,11 @@ include '../includes/header.php';
                             </div>
 
                             <div>
-                                <label for="report_file">Attach Report File <span style="font-weight:400;color:#8a8fa3;">(PDF / DOC / DOCX, max 10MB — optional)</span></label>
+                                <label for="report_file">Upload Report File <span style="color:#b42323;">*</span> <span style="font-weight:400;color:#7f8496;">(PDF, DOC, DOCX — max 10MB)</span></label>
                                 <input type="file" id="report_file" name="report_file"
                                        accept=".pdf,.doc,.docx"
-                                       style="width:100%;border:1.5px solid #ddd9ef;border-radius:14px;padding:12px 16px;font-size:14px;background:#fff;outline:none;box-sizing:border-box;">
+                                       required
+                                       style="width:100%;padding:12px 16px;border:1.5px solid #ddd9ef;border-radius:18px;background:#fff;font-size:15px;outline:none;box-sizing:border-box;">
                             </div>
 
                             <button type="submit" class="student-report-btn">Submit Report</button>

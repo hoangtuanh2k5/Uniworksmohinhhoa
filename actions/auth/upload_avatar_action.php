@@ -17,16 +17,16 @@ $back = match($role) {
 };
 
 if (empty($_FILES['avatar']['name'])) {
-    setFlash('error', 'Please select an image file.');
+    setFlash('error', 'Please select an image to upload.');
     redirect($back);
 }
 
 $file     = $_FILES['avatar'];
-$allowed  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+$allowed  = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 $maxSize  = 2 * 1024 * 1024; // 2MB
 
 if (!in_array($file['type'], $allowed)) {
-    setFlash('error', 'Only JPG, PNG, GIF, WEBP images are allowed.');
+    setFlash('error', 'Only JPG, PNG, WEBP, GIF images are allowed.');
     redirect($back);
 }
 
@@ -45,18 +45,15 @@ if (!move_uploaded_file($file['tmp_name'], $dest)) {
 }
 
 // Xóa avatar cũ nếu có
-$stmt = $pdo->prepare("SELECT avatar_url FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $old = $stmt->fetchColumn();
-if ($old && file_exists(__DIR__ . '/../../' . $old)) {
-    @unlink(__DIR__ . '/../../' . $old);
+if ($old && file_exists(__DIR__ . '/../../uploads/avatars/' . basename($old))) {
+    @unlink(__DIR__ . '/../../uploads/avatars/' . basename($old));
 }
 
-$url = 'uploads/avatars/' . $filename;
-$pdo->prepare("UPDATE users SET avatar_url = ? WHERE id = ?")->execute([$url, $user_id]);
-
-// Cập nhật session
-$_SESSION['user']['avatar_url'] = $url;
+$pdo->prepare("UPDATE users SET avatar = ? WHERE id = ?")->execute([$filename, $user_id]);
+$_SESSION['user']['avatar'] = $filename;
 
 setFlash('success', 'Profile photo updated successfully.');
 redirect($back);

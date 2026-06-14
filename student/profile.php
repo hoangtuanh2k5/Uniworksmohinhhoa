@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 <?php
 require_once '../includes/auth.php';
 require_once '../config/db.php';
@@ -10,7 +8,7 @@ $user = currentUser();
 $flash = getFlash();
 
 $stmt = $pdo->prepare("
-    SELECT s.*, u.full_name, u.email, u.avatar_url
+    SELECT s.*, u.full_name, u.email
     FROM users u
     LEFT JOIN students s ON u.id = s.user_id
     WHERE u.id = ?
@@ -20,6 +18,7 @@ $profile = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $setupMode = isset($_GET['setup']);
 
+require_once '../includes/notifications.php';
 include '../includes/header.php';
 ?>
 
@@ -27,13 +26,7 @@ include '../includes/header.php';
     <aside class="student-sidebar">
         <div>
             <div class="student-brand">
-                <div class="student-brand__logo">
-                                <?php if (!empty($user['avatar_url'])): ?>
-                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
-                                <?php else: ?>
-                                    ✦
-                                <?php endif; ?>
-                            </div>
+                <div class="student-brand__logo">✦</div>
                 <div class="student-brand__text">
                     <h3><?= htmlspecialchars($user['full_name']) ?></h3>
                     <p>Aspiring Student</p>
@@ -44,10 +37,10 @@ include '../includes/header.php';
                 <a href="/Uniworksmohinhhoa/student/dashboard.php">Dashboard</a>
                 <a href="/Uniworksmohinhhoa/student/applications.php">Applications</a>
                 <a href="/Uniworksmohinhhoa/student/jobs.php">Internships</a>
-                <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/student/messages.php">Messages<?php if(!empty($notif['messages']) && $notif['messages']>0): ?><span class="notif-badge"><?= $notif['messages'] ?></span><?php endif; ?></a>
                 <a href="/Uniworksmohinhhoa/student/profile.php" class="active">Profile</a>
                 <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
-                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation<?php if(!empty($notif['evaluations']) && $notif['evaluations']>0): ?><span class="notif-badge"><?= $notif['evaluations'] ?></span><?php endif; ?></a>
             </nav>
         </div>
 
@@ -96,30 +89,33 @@ include '../includes/header.php';
 
         <section class="student-profile-grid">
             <div class="student-form-card student-form-card--large">
+                <h2>Edit Student Information</h2>
+                <p class="student-muted" style="margin-bottom:18px;">
+                    Update the information used for your internship applications.
+                </p>
 
-                <!-- AVATAR UPLOAD -->
-                <h2 style="margin-bottom:14px;">Profile Photo</h2>
-                <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;">
-                    <?php if (!empty($profile['avatar_url'])): ?>
-                        <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($profile['avatar_url']) ?>"
-                             style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #e1e3ee;">
+                <!-- AVATAR -->
+                <div style="display:flex;align-items:center;gap:18px;margin-bottom:22px;">
+                    <?php
+                    $stmt2 = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
+                    $stmt2->execute([$user['id']]);
+                    $avatarRow = $stmt2->fetch(PDO::FETCH_ASSOC);
+                    ?>
+                    <?php if (!empty($avatarRow['avatar'])): ?>
+                        <img src="/Uniworksmohinhhoa/uploads/avatars/<?= htmlspecialchars($avatarRow['avatar']) ?>"
+                             alt="Avatar" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #eceef6;">
                     <?php else: ?>
-                        <div style="width:72px;height:72px;border-radius:50%;background:#ece8fb;display:flex;align-items:center;justify-content:center;font-size:28px;color:#7c6fcf;">✦</div>
-                    <?php endif; ?>
-                    <form action="/Uniworksmohinhhoa/actions/auth/upload_avatar_action.php" method="POST" enctype="multipart/form-data">
-                        <label style="font-size:13px;font-weight:700;display:block;margin-bottom:6px;">Upload Photo (JPG/PNG/WEBP, max 2MB)</label>
-                        <div style="display:flex;gap:10px;align-items:center;">
-                            <input type="file" name="avatar" accept="image/*" class="student-form-control" style="height:auto;padding:6px 10px;">
-                            <button type="submit" class="student-btn" style="white-space:nowrap;">Upload</button>
+                        <div style="width:72px;height:72px;border-radius:50%;background:#e7dcff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#5e57df;">
+                            <?= strtoupper(substr($profile['full_name'] ?? 'S', 0, 1)) ?>
                         </div>
+                    <?php endif; ?>
+                    <form action="/Uniworksmohinhhoa/actions/auth/upload_avatar_action.php" method="POST" enctype="multipart/form-data" style="display:flex;align-items:center;gap:10px;">
+                        <input type="file" name="avatar" accept="image/*" class="student-form-control" style="width:auto;height:auto;padding:6px 10px;border-radius:10px;" required>
+                        <button type="submit" class="student-btn" style="min-height:38px;padding:0 14px;font-size:13px;">Upload Photo</button>
                     </form>
                 </div>
 
-                <hr style="border:none;border-top:1px solid #eceef6;margin:0 0 24px;">
-
-                <h2>Edit Student Information</h2>                <p class="student-muted" style="margin-bottom:18px;">
-                    Update the information used for your internship applications.
-                </p>
+                <hr style="border:none;border-top:1px solid #eceef6;margin-bottom:22px;">
 
                 <form action="../actions/student/update_profile_action.php" method="POST">
                     <div class="student-form-row">
@@ -272,4 +268,3 @@ include '../includes/header.php';
 </div>
 
 <?php include '../includes/footer.php'; ?>
->>>>>>> Stashed changes
