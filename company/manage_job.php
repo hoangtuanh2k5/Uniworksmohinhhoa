@@ -20,6 +20,7 @@ function safeRedirect($path) {
     exit;
 }
 
+<<<<<<< Updated upstream
 if ($previewMode) {
     $jobs = [
         [
@@ -59,6 +60,20 @@ if ($previewMode) {
             'total_applications' => 15
         ]
     ];
+=======
+// Tự động đóng job quá deadline
+closeExpiredJobs($pdo);
+
+$stmt = $pdo->prepare("
+    SELECT j.*, ip.name AS period_name
+    FROM jobs j
+    INNER JOIN internship_periods ip ON j.period_id = ip.id
+    WHERE j.company_id = ?
+    ORDER BY j.id DESC
+");
+$stmt->execute([$company['id']]);
+$jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+>>>>>>> Stashed changes
 
     $success = null;
     $error = null;
@@ -125,6 +140,7 @@ foreach ($jobs as $job) {
     <aside class="company-sidebar">
         <div>
             <div class="company-brand">
+<<<<<<< Updated upstream
                 <h2>Uniworks</h2>
                 <p>Recruiter Portal</p>
             </div>
@@ -135,6 +151,29 @@ foreach ($jobs as $job) {
                 <a class="active" href="manage_job.php">Jobs</a>
                 <a href="messages.php">Messages</a>
                 <a href="profile.php">Profile</a>
+=======
+                <div class="company-brand__logo">
+                                <?php if (!empty($user['avatar_url'])): ?>
+                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
+                                <?php else: ?>
+                                    ✦
+                                <?php endif; ?>
+                            </div>
+                <div class="company-brand__text">
+                    <h3><?= htmlspecialchars($company['company_name']) ?></h3>
+                    <p>Recruiter Portal</p>
+                </div>
+            </div>
+
+            <nav class="company-nav">
+                <a href="/Uniworksmohinhhoa/company/dashboard.php">Dashboard</a>
+                <a href="/Uniworksmohinhhoa/company/applications.php">Applicants</a>
+                <a href="/Uniworksmohinhhoa/company/manage_job.php" class="active">Jobs</a>
+                <a href="/Uniworksmohinhhoa/company/internship_history.php">History</a>
+                <a href="/Uniworksmohinhhoa/company/evaluations.php">Evaluations</a>
+                <a href="/Uniworksmohinhhoa/company/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/company/profile.php">Profile</a>
+>>>>>>> Stashed changes
             </nav>
         </div>
 
@@ -194,6 +233,7 @@ foreach ($jobs as $job) {
                 <table class="company-table">
                     <thead>
                         <tr>
+                            <th>Job ID</th>
                             <th>Title</th>
                             <th>Period</th>
                             <th>Slots</th>
@@ -206,7 +246,20 @@ foreach ($jobs as $job) {
                     <tbody>
                         <?php if (empty($jobs)): ?>
                             <tr>
+<<<<<<< Updated upstream
                                 <td colspan="7">No jobs found.</td>
+=======
+                                <td><span style="font-size:12px;font-weight:700;color:#7a8096;background:#f4f1ff;padding:4px 10px;border-radius:999px;">JOB-<?= $job['id'] ?></span></td>
+                                <td><?= htmlspecialchars($job['title']) ?></td>
+                                <td><?= htmlspecialchars($job['period_name']) ?></td>
+                                <td><?= htmlspecialchars($job['deadline']) ?></td>
+                                <td><?= htmlspecialchars($job['slots']) ?></td>
+                                <td><?= htmlspecialchars($job['status']) ?></td>
+                                <td>
+                                    <a href="/Uniworksmohinhhoa/company/edit_job.php?id=<?= $job['id'] ?>">Edit</a> |
+                                    <a href="/Uniworksmohinhhoa/actions/company/delete_job_action.php?id=<?= $job['id'] ?>" onclick="return confirm('Delete this job?')">Delete</a>
+                                </td>
+>>>>>>> Stashed changes
                             </tr>
                         <?php else: ?>
                             <?php foreach ($jobs as $job): ?>

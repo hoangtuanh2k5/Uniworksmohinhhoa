@@ -165,6 +165,18 @@ include '../includes/navbar.php';
 
                     <div class="register-grid-2">
                         <div class="register-field">
+                            <label>Phone Number</label>
+                            <input type="text" name="phone" class="register-input" placeholder="0901234567" required>
+                        </div>
+
+                        <div class="register-field">
+                            <label>Tax Code</label>
+                            <input type="text" name="tax_code" class="register-input" placeholder="0312345678" required>
+                        </div>
+                    </div>
+
+                    <div class="register-grid-2">
+                        <div class="register-field">
                             <label>Password</label>
                             <input type="password" name="password" class="register-input" placeholder="••••••••" required>
                         </div>

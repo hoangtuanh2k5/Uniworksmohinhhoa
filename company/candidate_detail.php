@@ -98,6 +98,7 @@ if ($previewMode) {
     <aside class="company-sidebar">
         <div>
             <div class="company-brand">
+<<<<<<< Updated upstream
                 <h2>Uniworks</h2>
                 <p>Recruiter Portal</p>
             </div>
@@ -108,6 +109,29 @@ if ($previewMode) {
                 <a href="manage_job.php">Jobs</a>
                 <a href="messages.php">Messages</a>
                 <a href="profile.php">Profile</a>
+=======
+                <div class="company-brand__logo">
+                                <?php if (!empty($user['avatar_url'])): ?>
+                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
+                                <?php else: ?>
+                                    ✦
+                                <?php endif; ?>
+                            </div>
+                <div class="company-brand__text">
+                    <h3><?= htmlspecialchars($company['company_name']) ?></h3>
+                    <p>Recruiter Portal</p>
+                </div>
+            </div>
+
+            <nav class="company-nav">
+                <a href="/Uniworksmohinhhoa/company/dashboard.php">Dashboard</a>
+                <a href="/Uniworksmohinhhoa/company/applications.php" class="active">Applicants</a>
+                <a href="/Uniworksmohinhhoa/company/manage_jobs.php">Jobs</a>
+                <a href="/Uniworksmohinhhoa/company/internship_history.php">History</a>
+                <a href="/Uniworksmohinhhoa/company/evaluations.php">Evaluations</a>
+                <a href="/Uniworksmohinhhoa/company/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/company/profile.php">Profile</a>
+>>>>>>> Stashed changes
             </nav>
         </div>
 

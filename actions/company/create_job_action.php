@@ -30,6 +30,11 @@ if (!$company || !$periodId || !$title || !$description || !$deadline) {
     redirect('/Uniworksmohinhhoa/company/create_job.php');
 }
 
+if ($deadline < date('Y-m-d')) {
+    setFlash('error', 'Deadline cannot be in the past.');
+    redirect('/Uniworksmohinhhoa/company/create_job.php');
+}
+
 try {
     $stmt = $pdo->prepare("
         INSERT INTO jobs (company_id, period_id, title, description, requirements, slots, deadline, status, created_at)

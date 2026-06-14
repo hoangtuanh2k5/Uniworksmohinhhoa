@@ -36,8 +36,23 @@ admin_render_start(
             <span class="admin-kpi__trend">Active</span>
         </div>
         <div>
+<<<<<<< Updated upstream
             <div class="admin-kpi__label">Current Internships</div>
             <div class="admin-kpi__value"><?php echo number_format($activeInternships); ?></div>
+=======
+            <div class="admin-brand">
+                <h2>Admin Panel</h2>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="/Uniworksmohinhhoa/admin/dashboard.php">Dashboard</a>
+                <a href="/Uniworksmohinhhoa/admin/users.php">Users</a>
+                <a href="/Uniworksmohinhhoa/admin/company_approvals.php">Companies</a>
+                <a href="/Uniworksmohinhhoa/admin/applications.php">Applications</a>
+                <a href="/Uniworksmohinhhoa/admin/monitoring.php" class="active">Monitoring</a>
+                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports</a>
+            </nav>
+>>>>>>> Stashed changes
         </div>
     </article>
 

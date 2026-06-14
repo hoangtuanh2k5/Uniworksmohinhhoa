@@ -1,0 +1,117 @@
+<<<<<<< Updated upstream
+=======
+<?php
+require_once '../includes/auth.php';
+require_once '../config/db.php';
+require_once '../includes/functions.php';
+requireRole('student');
+
+$user = currentUser();
+$job_id = (int)($_GET['job_id'] ?? 0);
+$flash = getFlash();
+
+if ($job_id <= 0) {
+    redirect('/Uniworksmohinhhoa/student/jobs.php');
+}
+
+$stmt = $pdo->prepare("SELECT id FROM students WHERE user_id = ?");
+$stmt->execute([$user['id']]);
+$student = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$student) {
+    redirect('/Uniworksmohinhhoa/student/profile.php?setup=1');
+}
+
+$stmt = $pdo->prepare("
+    SELECT 
+        j.id,
+        j.title,
+        c.company_name
+    FROM jobs j
+    INNER JOIN companies c ON j.company_id = c.id
+    WHERE j.id = ?
+");
+$stmt->execute([$job_id]);
+$job = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$job) {
+    setFlash('error', 'Job not found.');
+    redirect('/Uniworksmohinhhoa/student/jobs.php');
+}
+
+include '../includes/header.php';
+?>
+
+<div class="student-shell">
+    <aside class="student-sidebar">
+        <div>
+            <div class="student-brand">
+                <div class="student-brand__logo">
+                                <?php if (!empty($user['avatar_url'])): ?>
+                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
+                                <?php else: ?>
+                                    ✦
+                                <?php endif; ?>
+                            </div>
+                <div class="student-brand__text">
+                    <h3><?= htmlspecialchars($user['full_name']) ?></h3>
+                    <p>Aspiring Student</p>
+                </div>
+            </div>
+
+            <nav class="student-nav">
+                <a href="/Uniworksmohinhhoa/student/dashboard.php">Dashboard</a>
+                <a href="/Uniworksmohinhhoa/student/applications.php">Applications</a>
+                <a href="/Uniworksmohinhhoa/student/jobs.php" class="active">Internships</a>
+                <a href="/Uniworksmohinhhoa/student/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/student/profile.php">Profile</a>
+                <a href="/Uniworksmohinhhoa/student/report.php">Final Report</a>
+                <a href="/Uniworksmohinhhoa/student/evaluation.php">Evaluation</a>
+            </nav>
+        </div>
+
+        <div class="student-sidebar__footer">
+            <a href="/Uniworksmohinhhoa/public/logout.php">↩ Logout</a>
+        </div>
+    </aside>
+
+    <main class="student-main">
+        <div class="student-form-card">
+            <h2>Apply for Internship</h2>
+
+            <?php if ($flash): ?>
+                <div class="flash <?= htmlspecialchars($flash['type']) ?>" style="margin-bottom:18px;">
+                    <?= htmlspecialchars($flash['message']) ?>
+                </div>
+            <?php endif; ?>
+
+            <p style="margin-bottom:8px;">
+                <strong>Job Title:</strong> <?= htmlspecialchars($job['title']) ?>
+            </p>
+
+            <p style="margin-bottom:20px;">
+                <strong>Company:</strong> <?= htmlspecialchars($job['company_name']) ?>
+            </p>
+
+            <form action="/Uniworksmohinhhoa/actions/student/apply_job_action.php" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
+
+                <div class="student-form-group">
+    <label for="cv_file">Upload CV (PDF, DOC, DOCX)</label>
+    <input
+        id="cv_file"
+        type="file"
+        name="cv_file"
+        accept=".pdf,.doc,.docx"
+        required
+        style="display:block; width:100%; padding:12px; background:#f8f9fc; border:1px solid #d9ddea; border-radius:16px;"
+    >
+</div>
+                <button type="submit" class="student-btn">Submit Application</button>
+            </form>
+        </div>
+    </main>
+</div>
+
+<?php include '../includes/footer.php'; ?>
+>>>>>>> Stashed changes

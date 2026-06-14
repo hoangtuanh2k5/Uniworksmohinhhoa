@@ -251,6 +251,7 @@ if ($previewMode) {
     <aside class="company-sidebar">
         <div>
             <div class="company-brand">
+<<<<<<< Updated upstream
                 <h2>Uniworks</h2>
                 <p>Recruiter Portal</p>
             </div>
@@ -261,6 +262,29 @@ if ($previewMode) {
                 <a href="manage_job.php">Jobs</a>
                 <a href="messages.php">Messages</a>
                 <a href="profile.php">Profile</a>
+=======
+                <div class="company-brand__logo">
+                                <?php if (!empty($user['avatar_url'])): ?>
+                                    <img src="/Uniworksmohinhhoa/<?= htmlspecialchars($user['avatar_url']) ?>" alt="avatar" style="width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;object-fit:cover;border-radius:10px;display:block;">
+                                <?php else: ?>
+                                    ✦
+                                <?php endif; ?>
+                            </div>
+                <div class="company-brand__text">
+                    <h3><?= htmlspecialchars($company['company_name']) ?></h3>
+                    <p>Recruiter Portal</p>
+                </div>
+            </div>
+
+            <nav class="company-nav">
+                <a href="/Uniworksmohinhhoa/company/dashboard.php">Dashboard</a>
+                <a href="/Uniworksmohinhhoa/company/applications.php" class="active">Applicants</a>
+                <a href="/Uniworksmohinhhoa/company/manage_job.php">Jobs</a>
+                <a href="/Uniworksmohinhhoa/company/internship_history.php">History</a>
+                <a href="/Uniworksmohinhhoa/company/evaluations.php">Evaluations</a>
+                <a href="/Uniworksmohinhhoa/company/messages.php">Messages</a>
+                <a href="/Uniworksmohinhhoa/company/profile.php">Profile</a>
+>>>>>>> Stashed changes
             </nav>
         </div>
 
@@ -337,11 +361,32 @@ if ($previewMode) {
                     <tbody>
                         <?php if (empty($applications)): ?>
                             <tr>
+<<<<<<< Updated upstream
                                 <td colspan="6">No applications found.</td>
+=======
+                                <th>App ID</th>
+                                <th>Applicant</th>
+                                <th>Job</th>
+                                <th>GPA</th>
+                                <th>Application Status</th>
+                                <th>CV</th>
+                                <th>Internship Start</th>
+                                <th>Internship End</th>
+                                <th>Duration</th>
+                                <th>Internship Status</th>
+                                <th>Action</th>
+>>>>>>> Stashed changes
                             </tr>
                         <?php else: ?>
                             <?php foreach ($applications as $app): ?>
                                 <tr>
+<<<<<<< Updated upstream
+=======
+                                    <td><span style="font-size:12px;font-weight:700;color:#7a8096;background:#f4f1ff;padding:4px 10px;border-radius:999px;">APP-<?= $app['id'] ?></span></td>
+                                    <td><?= htmlspecialchars($app['student_name']) ?></td>
+                                    <td><?= htmlspecialchars($app['job_title']) ?></td>
+                                    <td><?= htmlspecialchars(number_format((float)$app['gpa'], 2)) ?></td>
+>>>>>>> Stashed changes
                                     <td>
                                         <div class="applicant-cell">
                                             <div class="avatar"><?php echo htmlspecialchars(makeInitials($app['student_name'])); ?></div>
@@ -360,6 +405,7 @@ if ($previewMode) {
                                     </td>
                                     <td><?php echo htmlspecialchars($app['job_title']); ?></td>
                                     <td>
+<<<<<<< Updated upstream
                                         <div class="actions">
                                             <a class="btn btn-outline btn-sm" href="candidate_detail.php?id=<?php echo $app['id']; ?>">View Profile</a>
                                             <a class="btn btn-outline btn-sm" href="evaluate.php?id=<?php echo $app['id']; ?>">Evaluate</a>
@@ -387,6 +433,88 @@ if ($previewMode) {
                                                 </form>
                                             </div>
                                         <?php endif; ?>
+=======
+                                        <?php if (!empty($app['cv_url'])): ?>
+                                            <a 
+                                                href="/Uniworksmohinhhoa/<?= htmlspecialchars($app['cv_url']) ?>" 
+                                                target="_blank" 
+                                                class="company-link-btn cv"
+                                            >
+                                                View CV
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="company-muted">No CV</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($app['start_date'])): ?>
+                                            <span class="company-date"><?= htmlspecialchars($app['start_date']) ?></span>
+                                        <?php else: ?>
+                                            <span class="company-muted">Not started</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($app['end_date'])): ?>
+                                            <span class="company-date"><?= htmlspecialchars($app['end_date']) ?></span>
+                                        <?php else: ?>
+                                            <span class="company-muted">Not set</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($app['registration_id'])): ?>
+                                            <span class="company-date">3 months</span>
+                                        <?php else: ?>
+                                            <span class="company-muted">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($app['internship_status'])): ?>
+                                            <span class="company-internship-badge <?= renderInternshipBadgeClass($app['internship_status']) ?>">
+                                                <?= htmlspecialchars(ucfirst($app['internship_status'])) ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="company-muted">Not started</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div class="company-action-group">
+    <a 
+        href="/Uniworksmohinhhoa/company/candidate_detail.php?id=<?= $app['id'] ?>" 
+        class="company-link-btn profile"
+    >
+        View Profile
+    </a>
+
+    <a href="/Uniworksmohinhhoa/company/messages.php?receiver_id=<?= $app['student_id'] ?>"
+       class="company-link-btn" style="background:#e7dcff;color:#4a3f8f;">
+        💬 Message
+    </a>
+
+    <?php if (!empty($app['registration_id']) && $app['internship_status'] === 'completed'): ?>
+        <a 
+            href="/Uniworksmohinhhoa/company/evaluate.php?id=<?= $app['registration_id'] ?>" 
+            class="company-link-btn profile"
+        >
+            Evaluate
+        </a>
+    <?php endif; ?>
+
+    <?php if ((int)$app['admin_approved'] === 1 && (int)$app['company_approved'] === 0): ?>
+        <form action="/Uniworksmohinhhoa/actions/company/review_application_action.php" method="POST" style="display:inline;">
+            <input type="hidden" name="application_id" value="<?= $app['id'] ?>">
+            <input type="hidden" name="decision" value="accept">
+            <button type="submit" class="company-action-btn accept">Accept</button>
+        </form>
+
+        <form action="/Uniworksmohinhhoa/actions/company/review_application_action.php" method="POST" style="display:inline;">
+            <input type="hidden" name="application_id" value="<?= $app['id'] ?>">
+            <input type="hidden" name="decision" value="reject">
+            <button type="submit" class="company-action-btn reject">Reject</button>
+        </form>
+    <?php endif; ?>
+</div>
+
+>>>>>>> Stashed changes
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

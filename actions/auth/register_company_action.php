@@ -6,6 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('/Uniworksmohinhhoa/public/register.php?type=company');
 }
 
+<<<<<<< Updated upstream
 $full_name = sanitize($_POST['full_name'] ?? '');
 $email = sanitize($_POST['email'] ?? '');
 $phone = sanitize($_POST['phone'] ?? '');
@@ -18,6 +19,16 @@ $website = sanitize($_POST['website'] ?? '');
 $industry_type = sanitize($_POST['industry_type'] ?? '');
 
 if (!$full_name || !$email || !$password || !$confirm_password || !$company_name || !$tax_code) {
+=======
+$full_name        = sanitize($_POST['full_name']        ?? '');
+$email            = sanitize($_POST['email']            ?? '');
+$phone            = sanitize($_POST['phone']            ?? '');
+$tax_code         = sanitize($_POST['tax_code']         ?? '');
+$password         = $_POST['password']                  ?? '';
+$confirm_password = $_POST['confirm_password']          ?? '';
+
+if (!$full_name || !$email || !$phone || !$tax_code || !$password || !$confirm_password) {
+>>>>>>> Stashed changes
     setFlash('error', 'Please fill in all required fields.');
     redirect('/Uniworksmohinhhoa/public/register.php?type=company');
 }
@@ -38,6 +49,7 @@ if (strlen($password) < 6) {
 }
 
 try {
+    // Check email trùng
     $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
     $stmt->execute([$email]);
     if ($stmt->fetch()) {
@@ -45,6 +57,7 @@ try {
         redirect('/Uniworksmohinhhoa/public/register.php?type=company');
     }
 
+<<<<<<< Updated upstream
     $stmt = $pdo->prepare("SELECT id FROM companies WHERE tax_code = ?");
     $stmt->execute([$tax_code]);
     if ($stmt->fetch()) {
@@ -80,5 +93,42 @@ try {
         $pdo->rollBack();
     }
     setFlash('error', 'Registration failed.');
+=======
+    // Check tax_code trùng
+    $stmt = $pdo->prepare("SELECT id FROM companies WHERE tax_code = ?");
+    $stmt->execute([$tax_code]);
+    if ($stmt->fetch()) {
+        setFlash('error', 'Tax code already registered.');
+        redirect('/Uniworksmohinhhoa/public/register.php?type=company');
+    }
+
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+    $pdo->beginTransaction();
+
+    // Insert user
+    $stmt = $pdo->prepare("
+        INSERT INTO users (email, password, full_name, phone, role)
+        VALUES (?, ?, ?, ?, 'company')
+    ");
+    $stmt->execute([$email, $hashed_password, $full_name, $phone]);
+    $user_id = $pdo->lastInsertId();
+
+    // Insert company với tax_code — status = pending chờ admin duyệt
+    $stmt = $pdo->prepare("
+        INSERT INTO companies (user_id, company_name, tax_code, status)
+        VALUES (?, ?, ?, 'pending')
+    ");
+    $stmt->execute([$user_id, $full_name, $tax_code]);
+
+    $pdo->commit();
+
+    setFlash('success', 'Account created successfully. Your account is pending admin approval. You will be able to login once approved.');
+    redirect('/Uniworksmohinhhoa/public/login.php');
+
+} catch (Exception $e) {
+    $pdo->rollBack();
+    setFlash('error', 'Registration failed. Please try again.');
+>>>>>>> Stashed changes
     redirect('/Uniworksmohinhhoa/public/register.php?type=company');
 }

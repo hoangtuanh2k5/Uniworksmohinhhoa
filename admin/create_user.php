@@ -43,9 +43,33 @@ admin_render_start(
                 <label class="admin-form-label" for="full_name">Full Name</label>
                 <input id="full_name" type="text" name="full_name" class="admin-input" required>
             </div>
+<<<<<<< Updated upstream
             <div>
                 <label class="admin-form-label" for="email">Email</label>
                 <input id="email" type="email" name="email" class="admin-input" required>
+=======
+
+            <nav class="admin-nav">
+                <a href="/Uniworksmohinhhoa/admin/dashboard.php">Dashboard</a>
+                <a href="/Uniworksmohinhhoa/admin/users.php" class="active">Users</a>
+                <a href="/Uniworksmohinhhoa/admin/company_approvals.php">Companies</a>
+                <a href="/Uniworksmohinhhoa/admin/applications.php">Applications</a>
+                <a href="/Uniworksmohinhhoa/admin/monitoring.php">Monitoring</a>
+                <a href="/Uniworksmohinhhoa/admin/reports.php">Reports</a>
+            </nav>
+        </div>
+
+        <div class="admin-sidebar__footer">
+            <a href="/Uniworksmohinhhoa/public/logout.php">Logout</a>
+        </div>
+    </aside>
+
+    <main class="admin-main">
+        <div class="admin-create-page">
+            <div class="admin-create-header">
+                <h1>Create User</h1>
+                <p>Create a new system account for admin, student, or company users.</p>
+>>>>>>> Stashed changes
             </div>
             <div>
                 <label class="admin-form-label" for="phone">Phone</label>

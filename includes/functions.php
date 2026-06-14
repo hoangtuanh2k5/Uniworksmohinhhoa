@@ -39,4 +39,25 @@ function getFlash() {
     }
     return null;
 }
+
+/**
+ * Tự động đóng các job đã quá deadline.
+ * Gọi hàm này ở bất kỳ trang nào load jobs.
+ * Dùng session cache để tránh chạy query quá nhiều lần trong 1 phiên.
+ */
+function closeExpiredJobs(PDO $pdo): void {
+    // Chỉ chạy tối đa 1 lần mỗi 5 phút trong cùng session
+    $now = time();
+    if (isset($_SESSION['_jobs_checked']) && ($now - $_SESSION['_jobs_checked']) < 300) {
+        return;
+    }
+    $_SESSION['_jobs_checked'] = $now;
+
+    $pdo->prepare("
+        UPDATE jobs
+        SET status = 'closed'
+        WHERE status = 'open'
+          AND deadline < CURDATE()
+    ")->execute();
+}
 ?>

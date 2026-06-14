@@ -1,5 +1,11 @@
 <?php
+<<<<<<< Updated upstream
 require_once __DIR__ . '/../../includes/db_connect.php';
+=======
+require_once '../../config/db.php';
+require_once '../../includes/auth.php';
+require_once '../../includes/functions.php';
+>>>>>>> Stashed changes
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header('Location: ../../admin/users.php?error=invalid_id');
